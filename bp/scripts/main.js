@@ -197,7 +197,16 @@ function grantMenuClock(player) {
             const enchantable = clock.getComponent("enchantable") || clock.getComponent("minecraft:enchantable");
             if (enchantable) {
                 const unbreakingType = EnchantmentTypes.get("unbreaking");
-                if (unbreakingType) enchantable.addEnchantment({ type: unbreakingType, level: 1 });
+                if (unbreakingType) {
+                    try {
+                        enchantable.addEnchantment({ type: unbreakingType, level: 1 });
+                    } catch (e) {
+                        try {
+                            // Some versions require the exact Enchantment object if it was changed
+                            // enchantable.addEnchantment(new Enchantment(unbreakingType, 1));
+                        } catch(err){}
+                    }
+                }
             }
         } catch (e) {}
 
