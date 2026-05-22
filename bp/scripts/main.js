@@ -2,10 +2,11 @@ import { world, system, ItemStack, ItemLockMode, EnchantmentTypes, DisplaySlotId
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 import { EconomyConfig } from "./economy_config.js";
 import { getPlayerRpgData, getXpRequired, generateXpBar, applyPassiveStats, addXp, breakBlockArea, canUseActiveSkill, savePlayerRpgData } from "./rpg_system.js";
-import { formatRupiah, getUiHeader, sendToInbox, getInbox, clearInbox } from "./utils.js";
+import { formatRupiah, getUiHeader, sendToInbox, getInbox, clearInbox, getScore, setScore } from "./utils.js";
 import { openGachaMenu, PASSIVE_POOL } from "./gacha_system.js";
 import { openTrollMenu } from "./troll_system.js";
 import { getPlayerRank } from "./rank_system.js";
+import { openAutoSellMenu } from "./auto_sell_system.js";
 
 // Initialize Objective
 system.run(() => {
@@ -65,22 +66,7 @@ system.runInterval(() => {
     }
 }, 20);
 
-function getScore(player, objectiveId) {
-    const obj = world.scoreboard.getObjective(objectiveId);
-    if (!obj) return 0;
-    try {
-        return obj.getScore(player.scoreboardIdentity) || 0;
-    } catch {
-        return 0;
-    }
-}
 
-function setScore(player, objectiveId, score) {
-    const obj = world.scoreboard.getObjective(objectiveId);
-    if (obj) {
-        obj.setScore(player, score);
-    }
-}
 
 // Actionbar Loop & Visibility Tracker
 const hiddenBoards = new Map();
@@ -274,6 +260,7 @@ export function openMainMenu(player) {
     form.body(`${rankBadge}\n§e§lDOMPET: §f${formatRupiah(score)}\n§b§lCORE: §f${coreScore}\n§aOnline: ${online} Pemain`);
     form.button("§e§lMenu Beli Barang\n§7Klik untuk beli kebutuhan", "textures/items/emerald");
     form.button("§a§lMenu Jual Barang\n§7Pindah & Filter Rupiah", "textures/items/gold_ingot");
+    form.button("§2§lBeli Mesin Auto-Sell\n§7Otomatis Jual Hasil Farm", "textures/blocks/chest_front");
     form.button("§b§lTransfer Rupiah\n§7Kirim Rupiah ke pemain lain", "textures/items/paper");
     form.button("§c§lSistem Bounty\n§7Pasang buronan", "textures/items/iron_sword");
     form.button("§6§lTop Sultan\n§7Peringkat pemain terkaya", "textures/items/diamond");
@@ -300,30 +287,33 @@ export function openMainMenu(player) {
                 openSellChoiceMenu(player);
                 break;
             case 2:
-                openTransferMenu(player);
+                openAutoSellMenu(player);
                 break;
             case 3:
-                openBountyMenu(player);
+                openTransferMenu(player);
                 break;
             case 4:
-                openTopKoinMenu(player);
+                openBountyMenu(player);
                 break;
             case 5:
-                openRpgMenu(player);
+                openTopKoinMenu(player);
                 break;
             case 6:
-                openGachaMenu(player);
+                openRpgMenu(player);
                 break;
             case 7:
-                openTrollMenu(player);
+                openGachaMenu(player);
                 break;
             case 8:
-                import("./rank_system.js").then(mod => mod.openRankMenu(player)).catch(()=>{});
+                openTrollMenu(player);
                 break;
             case 9:
-                import("./teleport_system.js").then(mod => mod.openTeleportMenu(player)).catch(()=>{});
+                import("./rank_system.js").then(mod => mod.openRankMenu(player)).catch(()=>{});
                 break;
             case 10:
+                import("./teleport_system.js").then(mod => mod.openTeleportMenu(player)).catch(()=>{});
+                break;
+            case 11:
                 openInboxMenu(player);
                 break;
         }

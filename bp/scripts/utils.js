@@ -69,3 +69,21 @@ export function clearInbox(playerName) {
         world.setDynamicProperty(`inbox_${playerName}`, JSON.stringify([]));
     } catch(e) {}
 }
+
+export function getScore(player, objectiveId) {
+    // import { world } is already at the top of utils.js
+    const obj = world.scoreboard.getObjective(objectiveId);
+    if (!obj) return 0;
+    try {
+        return obj.getScore(player.scoreboardIdentity) || 0;
+    } catch {
+        return 0;
+    }
+}
+
+export function setScore(player, objectiveId, score) {
+    const obj = world.scoreboard.getObjective(objectiveId);
+    if (obj) {
+        obj.setScore(player, score);
+    }
+}
