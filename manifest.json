@@ -1,0 +1,29 @@
+{
+    "format_version": 2,
+    "header": {
+        "name": "EkonomiBDS_Pro",
+        "description": "Sistem Ekonomi Terpisah & Advanced Scoreboard 1.26.1",
+        "uuid": "6f0b832b-4d9a-4f2e-839c-772b145a19a2",
+        "version": [1, 0, 0],
+        "min_engine_version": [1, 26, 1]
+    },
+    "modules": [
+        {
+            "type": "script",
+            "language": "javascript",
+            "uuid": "4b9c12df-7a63-42eb-bb21-998c34f128e4",
+            "entry": "scripts/main.js",
+            "version": [1, 0, 0]
+        }
+    ],
+    "dependencies": [
+        {
+            "module_name": "@minecraft/server",
+            "version": "1.13.0"
+        },
+        {
+            "module_name": "@minecraft/server-ui",
+            "version": "1.2.0"
+        }
+    ]
+}
