@@ -62,7 +62,7 @@ refreshShop();
 system.runInterval(() => {
     if (Date.now() >= nextRefreshTime) {
         refreshShop();
-        world.sendMessage("§e[Shop] §fBarang jualan di Menu Beli telah diperbarui! Cek sekarang!");
+        // world.sendMessage("§e[Shop] §fBarang jualan di Menu Beli telah diperbarui! Cek sekarang!");
     }
 }, 20);
 
@@ -270,7 +270,7 @@ export function openMainMenu(player) {
     form.button("§e§lMenu Beli Barang\n§7Klik untuk beli kebutuhan", "textures/items/emerald");
     form.button("§a§lMenu Jual Barang\n§7Pindah & Filter Rupiah", "textures/items/gold_ingot");
     form.button("§2§lBeli Mesin Auto-Sell\n§7Otomatis Jual Hasil Farm", "textures/blocks/chest_front");
-    form.button("§b§lTransfer Rupiah\n§7Kirim Rupiah ke pemain lain", "textures/items/paper");
+    form.button("§b§lTransfer\n§7Kirim Rupiah/Barang", "textures/items/paper");
     form.button("§c§lSistem Bounty\n§7Pasang buronan", "textures/items/iron_sword");
     form.button("§6§lTop Sultan\n§7Peringkat pemain terkaya", "textures/items/diamond");
     form.button("§d§lMenu RPG & Skill\n§7Level & Kemampuan Aktif", "textures/items/diamond_sword");
@@ -299,7 +299,7 @@ export function openMainMenu(player) {
                 openAutoSellMenu(player);
                 break;
             case 3:
-                openTransferMenu(player);
+                openTransferChoiceMenu(player);
                 break;
             case 4:
                 openBountyMenu(player);
@@ -343,28 +343,76 @@ function openInboxMenu(player) {
         return;
     }
 
-    let totalClaimed = 0;
+    let totalClaimedRupiah = 0;
+    let itemsToClaim = [];
     let bodyText = `${getUiHeader(player)}\n§aPesan Baru:\n\n`;
 
     for (const msg of inbox) {
         const date = new Date(msg.timestamp);
         const timeStr = `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
-        bodyText += `§f[${timeStr}] Dari §b${msg.sender}§f:\n§7"${msg.message}"\n§e+${formatRupiah(msg.amount)}\n\n`;
-        totalClaimed += msg.amount;
+        let attachmentText = "";
+
+        if (msg.amount > 0) {
+            attachmentText += `§e+${formatRupiah(msg.amount)}\n`;
+            totalClaimedRupiah += msg.amount;
+        }
+
+        if (msg.item && msg.item.amount > 0) {
+            attachmentText += `§a+${msg.item.amount}x ${formatItemName(msg.item.typeId)}\n`;
+            itemsToClaim.push(msg.item);
+        }
+
+        bodyText += `§f[${timeStr}] Dari §b${msg.sender}§f:\n§7"${msg.message}"\n${attachmentText}\n`;
     }
 
-    bodyText += `§a--------------------\n§fTotal Diterima: §e${formatRupiah(totalClaimed)}`;
+    bodyText += `§a--------------------\n§fTotal Diterima: §e${formatRupiah(totalClaimedRupiah)}`;
+    if (itemsToClaim.length > 0) {
+        bodyText += `\n§fTotal Barang: §a${itemsToClaim.length} jenis item`;
+    }
+
     form.body(bodyText);
-    form.button(`§aKlaim Semua (${formatRupiah(totalClaimed)})`, "textures/items/emerald");
+    form.button(`§aKlaim Semua\n§7Uang & Barang`, "textures/items/emerald");
     form.button("§cTutup");
 
     form.show(player).then((res) => {
         if (res.canceled) return;
         if (res.selection === 0) {
-            const currentCoins = getScore(player, "dompet");
-            setScore(player, "dompet", currentCoins + totalClaimed);
-            clearInbox(player.name);
-            player.sendMessage(`§a[System] Berhasil mengklaim ${formatRupiah(totalClaimed)} dari Inbox!`);
+            // Claim Rupiah
+            if (totalClaimedRupiah > 0) {
+                const currentCoins = getScore(player, "dompet");
+                setScore(player, "dompet", currentCoins + totalClaimedRupiah);
+                player.sendMessage(`§a[System] Berhasil mengklaim ${formatRupiah(totalClaimedRupiah)} dari Inbox!`);
+            }
+
+            // Claim Items
+            let failedItems = [];
+            for (const itemData of itemsToClaim) {
+                const success = giveItemToPlayer(player, itemData.typeId, itemData.amount);
+                if (success) {
+                    player.sendMessage(`§a[System] Berhasil mengklaim ${itemData.amount}x ${formatItemName(itemData.typeId)}!`);
+                } else {
+                    failedItems.push(itemData);
+                }
+            }
+
+            // Check if any items failed due to full inventory
+            if (failedItems.length > 0) {
+                player.sendMessage("§c[System] Beberapa barang gagal diklaim karena inventory penuh! Barang dikembalikan ke Inbox.");
+                // Overwrite inbox with only the failed items
+                const newInbox = failedItems.map(item => ({
+                    sender: "System",
+                    amount: 0,
+                    message: "Barang tertinggal akibat tas penuh.",
+                    timestamp: Date.now(),
+                    item: item
+                }));
+                // Try catch to safely set property
+                try {
+                    world.setDynamicProperty(`inbox_${player.name}`, JSON.stringify(newInbox));
+                } catch(e) {}
+            } else {
+                clearInbox(player.name);
+            }
         }
     });
 }
@@ -549,6 +597,22 @@ function openEquipUnifiedMenu(player) {
 }
 
 
+function openTransferChoiceMenu(player) {
+    const form = new ActionFormData();
+    form.title("§b[ Menu Transfer ]");
+    form.body(`${getUiHeader(player)}\n§7Apa yang ingin Anda kirimkan?`);
+    form.button("§eTransfer Rupiah\n§7Kirim uang ke pemain", "textures/items/gold_nugget");
+    form.button("§aTransfer Barang\n§7Kirim item dari inventory", "textures/items/chest");
+    form.button("§cKembali", "textures/ui/cancel");
+
+    form.show(player).then(res => {
+        if (res.canceled) return;
+        if (res.selection === 0) openTransferMenu(player);
+        else if (res.selection === 1) openTransferItemMenu(player);
+        else if (res.selection === 2) system.runTimeout(() => { openMainMenu(player); }, 5);
+    });
+}
+
 function openTransferMenu(player) {
     const form = new ActionFormData();
     form.title("§b[ Transfer Rupiah ]");
@@ -561,7 +625,247 @@ function openTransferMenu(player) {
         if (res.canceled) return;
         if (res.selection === 0) openOnlineTransferMenu(player);
         else if (res.selection === 1) openOfflineTransferMenu(player);
-        else if (res.selection === 2) system.runTimeout(() => { openMainMenu(player); }, 5);
+        else if (res.selection === 2) openTransferChoiceMenu(player);
+    });
+}
+
+function openTransferItemMenu(player) {
+    const form = new ActionFormData();
+    form.title("§a[ Transfer Barang ]");
+    form.body(`${getUiHeader(player)}\n§7Pilih penerima barang.`);
+    form.button("§aPemain Online\n§7Pilih dari daftar pemain", "textures/ui/FriendsIcon");
+    form.button("§cPemain Offline\n§7Ketik nama secara manual", "textures/ui/icon_multiplayer");
+    form.button("§cKembali", "textures/ui/cancel");
+
+    form.show(player).then(res => {
+        if (res.canceled) return;
+        if (res.selection === 0) openOnlineTransferItemMenu(player);
+        else if (res.selection === 1) openOfflineTransferItemMenu(player);
+        else if (res.selection === 2) openTransferChoiceMenu(player);
+    });
+}
+
+function getTransferableItems(player) {
+    const invComponent = player.getComponent("inventory");
+    if (!invComponent) return [];
+    const inv = invComponent.container;
+    if (!inv) return [];
+
+    // Group items by typeId and sum amounts
+    const itemMap = new Map();
+    for (let i = 0; i < 36; i++) {
+        const item = inv.getItem(i);
+        if (!item) continue;
+
+        // Exclude system items
+        if (item.typeId === "minecraft:clock" && item.nameTag === "§e§lMenu Utama") continue;
+        if (item.typeId === "minecraft:book" && item.nameTag === "§a§lBuku Panduan") continue;
+
+        const currentAmount = itemMap.get(item.typeId) || 0;
+        itemMap.set(item.typeId, currentAmount + item.amount);
+    }
+
+    return Array.from(itemMap.entries()).map(([typeId, amount]) => ({ typeId, totalAmount: amount }));
+}
+
+function processItemDeduction(player, typeId, amountToDeduct) {
+    const invComponent = player.getComponent("inventory");
+    if (!invComponent) return false;
+    const inv = invComponent.container;
+    if (!inv) return false;
+
+    let remainingToRemove = amountToDeduct;
+    for (let slot = 0; slot < 36; slot++) {
+        if (remainingToRemove <= 0) break;
+        const item = inv.getItem(slot);
+
+        if (item && item.typeId === typeId) {
+            // Safe guard against system items
+            if (item.typeId === "minecraft:clock" && item.nameTag === "§e§lMenu Utama") continue;
+            if (item.typeId === "minecraft:book" && item.nameTag === "§a§lBuku Panduan") continue;
+
+            if (item.amount <= remainingToRemove) {
+                remainingToRemove -= item.amount;
+                inv.setItem(slot, undefined);
+            } else {
+                item.amount -= remainingToRemove;
+                inv.setItem(slot, item);
+                remainingToRemove = 0;
+            }
+        }
+    }
+    return remainingToRemove === 0;
+}
+
+function giveItemToPlayer(targetPlayer, typeId, amount) {
+    const invComponent = targetPlayer.getComponent("inventory");
+    if (!invComponent) return false;
+    const inv = invComponent.container;
+    if (!inv) return false;
+
+    // Check if enough space
+    const maxStackSize = new ItemStack(typeId, 1).maxAmount;
+    const slotsNeeded = Math.ceil(amount / maxStackSize);
+
+    if (inv.emptySlotsCount < slotsNeeded) {
+        return false;
+    }
+
+    let remaining = amount;
+    while (remaining > 0) {
+        let toGive = Math.min(remaining, maxStackSize);
+        let stackToGive = new ItemStack(typeId, toGive);
+        try {
+            inv.addItem(stackToGive);
+        } catch(e) {}
+        remaining -= toGive;
+    }
+    return true;
+}
+
+function openOnlineTransferItemMenu(player) {
+    const onlinePlayers = world.getAllPlayers().filter(p => p.name !== player.name);
+    if (onlinePlayers.length === 0) {
+        player.sendMessage("§c[System] Tidak ada pemain lain yang online saat ini.");
+        return;
+    }
+
+    const transferableItems = getTransferableItems(player);
+    if (transferableItems.length === 0) {
+        player.sendMessage("§c[System] Tidak ada barang di inventory yang bisa ditransfer.");
+        return;
+    }
+
+    const playerNames = onlinePlayers.map(p => p.name);
+    const itemNamesList = transferableItems.map(item => `${formatItemName(item.typeId)} (Max: ${item.totalAmount})`);
+
+    const form = new ModalFormData();
+    form.title("§a[ Transfer Barang Online ]");
+    form.dropdown("Pilih Pemain:", playerNames);
+    form.dropdown("Pilih Barang:", itemNamesList);
+    form.textField("Jumlah:", "Contoh: 10");
+    form.textField("Pesan Tambahan (Opsional):", "Contoh: Ini barang untukmu");
+
+    form.show(player).then(res => {
+        if (res.canceled) return;
+
+        const targetPlayerName = playerNames[res.formValues[0]];
+        const selectedItemData = transferableItems[res.formValues[1]];
+        const amountStr = res.formValues[2];
+        const amount = parseInt(amountStr);
+        const customMessage = res.formValues[3].trim() || "Transfer barang dari teman";
+
+        if (isNaN(amount) || amount <= 0) {
+            player.sendMessage("§c[System] Jumlah barang tidak valid!");
+            return;
+        }
+
+        // Prevent TOCTOU exploit by re-checking current items
+        const currentItems = getTransferableItems(player);
+        const currentItemData = currentItems.find(i => i.typeId === selectedItemData.typeId);
+
+        if (!currentItemData || amount > currentItemData.totalAmount) {
+            player.sendMessage("§c[System] Anda tidak memiliki cukup barang!");
+            return;
+        }
+
+        const targetPlayer = world.getAllPlayers().find(p => p.name === targetPlayerName);
+        if (!targetPlayer) {
+            player.sendMessage("§c[System] Pemain target tidak ditemukan (mungkin baru saja keluar).");
+            return;
+        }
+
+        // Prevent order of operation exploit: deduct first, check success
+        const deductionSuccess = processItemDeduction(player, selectedItemData.typeId, amount);
+        if (!deductionSuccess) {
+            player.sendMessage("§c[System] Terjadi kesalahan saat mengurangi barang. Transfer dibatalkan.");
+            return;
+        }
+
+        // Try giving to target
+        const givenSuccessfully = giveItemToPlayer(targetPlayer, selectedItemData.typeId, amount);
+
+        if (givenSuccessfully) {
+            player.sendMessage(`§a[System] Berhasil mentransfer §e${amount}x ${formatItemName(selectedItemData.typeId)} §ake §b${targetPlayer.name}§a.`);
+            targetPlayer.sendMessage(`§a[System] Anda menerima §e${amount}x ${formatItemName(selectedItemData.typeId)} §adari §b${player.name}§a.\nPesan: §7"${customMessage}"`);
+        } else {
+            // Inventory target penuh, kirim lewat Inbox
+            sendToInbox(targetPlayerName, player.name, 0, customMessage, { typeId: selectedItemData.typeId, amount: amount });
+            player.sendMessage(`§a[System] Berhasil mengirim §e${amount}x ${formatItemName(selectedItemData.typeId)} §ake §b${targetPlayerName}§a melalui §eInbox§a (Inventory target penuh).`);
+            targetPlayer.sendMessage(`§a[System] §b${player.name} §amengirim barang ke Anda, namun Inventory penuh. Cek §eInbox §auntuk klaim!`);
+        }
+    });
+}
+
+function openOfflineTransferItemMenu(player) {
+    const transferableItems = getTransferableItems(player);
+    if (transferableItems.length === 0) {
+        player.sendMessage("§c[System] Tidak ada barang di inventory yang bisa ditransfer.");
+        return;
+    }
+
+    const itemNamesList = transferableItems.map(item => `${formatItemName(item.typeId)} (Max: ${item.totalAmount})`);
+
+    const form = new ModalFormData();
+    form.title("§c[ Transfer Barang Offline ]");
+    form.textField("Nama Pemain Target (Harus Akurat):", "Ketik nama lengkap pemain");
+    form.dropdown("Pilih Barang:", itemNamesList);
+    form.textField("Jumlah:", "Contoh: 10");
+    form.textField("Pesan Tambahan (Opsional):", "Contoh: Titipan barang");
+
+    form.show(player).then(res => {
+        if (res.canceled) return;
+
+        const targetPlayerName = res.formValues[0].trim();
+        const selectedItemData = transferableItems[res.formValues[1]];
+        const amountStr = res.formValues[2];
+        const amount = parseInt(amountStr);
+        const customMessage = res.formValues[3].trim() || "Transfer barang dari teman";
+
+        if (!targetPlayerName) {
+            player.sendMessage("§c[System] Nama target tidak boleh kosong!");
+            return;
+        }
+
+        if (isNaN(amount) || amount <= 0) {
+            player.sendMessage("§c[System] Jumlah barang tidak valid!");
+            return;
+        }
+
+        // Prevent TOCTOU exploit by re-checking current items
+        const currentItems = getTransferableItems(player);
+        const currentItemData = currentItems.find(i => i.typeId === selectedItemData.typeId);
+
+        if (!currentItemData || amount > currentItemData.totalAmount) {
+            player.sendMessage("§c[System] Anda tidak memiliki cukup barang!");
+            return;
+        }
+
+        const targetPlayer = world.getAllPlayers().find(p => p.name === targetPlayerName);
+
+        // Prevent order of operation exploit: deduct first, check success
+        const deductionSuccess = processItemDeduction(player, selectedItemData.typeId, amount);
+        if (!deductionSuccess) {
+            player.sendMessage("§c[System] Terjadi kesalahan saat mengurangi barang. Transfer dibatalkan.");
+            return;
+        }
+
+        if (targetPlayer) {
+            // Target is actually online, use online flow logic
+            const givenSuccessfully = giveItemToPlayer(targetPlayer, selectedItemData.typeId, amount);
+            if (givenSuccessfully) {
+                player.sendMessage(`§a[System] Berhasil mentransfer §e${amount}x ${formatItemName(selectedItemData.typeId)} §ake §b${targetPlayer.name}§a.`);
+                targetPlayer.sendMessage(`§a[System] Anda menerima §e${amount}x ${formatItemName(selectedItemData.typeId)} §adari §b${player.name}§a.\nPesan: §7"${customMessage}"`);
+            } else {
+                sendToInbox(targetPlayerName, player.name, 0, customMessage, { typeId: selectedItemData.typeId, amount: amount });
+                player.sendMessage(`§a[System] Berhasil mengirim §e${amount}x ${formatItemName(selectedItemData.typeId)} §ake §b${targetPlayerName}§a melalui §eInbox§a (Inventory target penuh).`);
+                targetPlayer.sendMessage(`§a[System] §b${player.name} §amengirim barang ke Anda, namun Inventory penuh. Cek §eInbox §auntuk klaim!`);
+            }
+        } else {
+            // Target is offline, send to inbox directly
+            sendToInbox(targetPlayerName, player.name, 0, customMessage, { typeId: selectedItemData.typeId, amount: amount });
+            player.sendMessage(`§a[System] Berhasil mengirim §e${amount}x ${formatItemName(selectedItemData.typeId)} §ake §b${targetPlayerName}§a (Offline).\nMereka akan menerimanya saat membuka Inbox.`);
+        }
     });
 }
 
