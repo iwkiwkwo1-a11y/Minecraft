@@ -1061,9 +1061,10 @@ function processSellAll(player) {
         if (item.typeId === "minecraft:book" && item.nameTag === "§a§lBuku Panduan") continue;
 
         const typeId = item.typeId;
-        const sellPrice = EconomyConfig.sellPrices[typeId];
+        const basePrice = EconomyConfig.sellPrices[typeId];
+        const sellPrice = basePrice !== undefined ? basePrice : 5; // 5 Rupiah fallback for all other items
 
-        if (sellPrice !== undefined) {
+        if (true) { // We now sell everything except clock/book
             // It's a valid rare item to sell
             const amount = item.amount;
             const itemValue = sellPrice * amount;
@@ -1072,23 +1073,20 @@ function processSellAll(player) {
             // Remove the item completely
             inventory.setItem(i, undefined);
             itemsSold = true;
-        } else {
-            // It's an unlisted item
-            hasRejectedItems = true;
         }
     }
 
     if (itemsSold) {
         const currentCoins = getScore(player, "dompet");
         setScore(player, "dompet", currentCoins + totalEarned);
-        player.sendMessage(`§a[Shop] Berhasil menjual barang langka! Total didapat: §e${formatRupiah(totalEarned)}`);
+        player.sendMessage(`§a[Shop] Berhasil menjual barang! Total didapat: §e${formatRupiah(totalEarned)}`);
     }
 
     if (hasRejectedItems) {
         player.dimension.runCommandAsync(`title "${player.name}" subtitle §fTerdapat barang biasa di dalam Inventory.`);
         player.dimension.runCommandAsync(`title "${player.name}" title §c§lDITOLAK`);
     } else if (!itemsSold) {
-        player.sendMessage("§c[Shop] Tidak ada barang langka yang dapat dijual di dalam Inventory.");
+        player.sendMessage("§c[Shop] Tidak ada barang yang dapat dijual di dalam Inventory.");
     }
 }
 
@@ -1236,8 +1234,8 @@ world.afterEvents.entityHurt.subscribe((event) => {
 function openSellChoiceMenu(player) {
     const form = new ActionFormData();
     form.title("§1[ Menu Jual Barang ]");
-    form.body(`${getUiHeader(player)}\n§7Pilih metode penjualan barang langka Anda.`);
-    form.button("§aJual Semua (Auto-Scan)\n§7Otomatis jual semua barang langka", "textures/ui/refresh_light");
+    form.body(`${getUiHeader(player)}\n§7Pilih metode penjualan barang Anda.`);
+    form.button("§aJual Semua (Auto-Scan)\n§7Otomatis jual semua barang", "textures/ui/refresh_light");
     form.button("§ePilih Manual (Manual-Scan)\n§7Pilih barang yang ingin dijual", "textures/ui/inventory_icon");
     form.button("§cKembali ke Menu Utama", "textures/ui/cancel");
 
@@ -1270,15 +1268,14 @@ function openManualSellMenu(player) {
         if (item.typeId === "minecraft:clock" && item.nameTag === "§e§lMenu Utama") continue;
         if (item.typeId === "minecraft:book" && item.nameTag === "§a§lBuku Panduan") continue;
 
-        const sellPrice = EconomyConfig.sellPrices[item.typeId];
-        if (sellPrice !== undefined) {
-            const currentAmount = sellableMap.get(item.typeId) || 0;
-            sellableMap.set(item.typeId, currentAmount + item.amount);
-        }
+        const basePrice = EconomyConfig.sellPrices[item.typeId];
+        const sellPrice = basePrice !== undefined ? basePrice : 5;
+        const currentAmount = sellableMap.get(item.typeId) || 0;
+        sellableMap.set(item.typeId, currentAmount + item.amount);
     }
 
     if (sellableMap.size === 0) {
-        player.sendMessage("§c[Shop] Tidak ada barang langka yang dapat dijual di dalam Inventory.");
+        player.sendMessage("§c[Shop] Tidak ada barang yang dapat dijual di dalam Inventory.");
         return;
     }
 
@@ -1287,7 +1284,8 @@ function openManualSellMenu(player) {
 
     // Convert map to array for predictable iteration
     const sellableList = Array.from(sellableMap.entries()).map(([typeId, amount]) => {
-        return { typeId, totalAmount: amount, price: EconomyConfig.sellPrices[typeId] };
+        const base = EconomyConfig.sellPrices[typeId];
+        return { typeId, totalAmount: amount, price: base !== undefined ? base : 5 };
     });
 
     for (const data of sellableList) {
