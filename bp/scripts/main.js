@@ -448,36 +448,38 @@ function openRpgMenu(player) {
         }
     }
 
-    const is3x3Enabled = rpgData.enable3x3 === true;
-    statsStr += `\n§fStatus Mode 3x3: ${is3x3Enabled ? "§aNYALA" : "§cMATI"}`;
-
     form.body(statsStr);
 
-    form.button("§eSkill Tree (Beli Skill)\n§7Tukar SP dengan Skill Baru");
-    form.button("§aKelola Semua Skill\n§7Pasang Skill & Pasif Dewamu");
-    form.button(`§bMode Hancur 3x3: ${is3x3Enabled ? "MATIKAN" : "NYALAKAN"}\n§7Mencegah hancurnya rumah`);
-    form.button("§cKembali ke Menu Utama");
+    form.button("§9Panduan Bermain RPG\n§7Cara menaikkan level & mendapat skill", "textures/items/book_writable");
+    form.button("§eSkill Tree (Beli Skill)\n§7Tukar SP dengan Skill Baru", "textures/items/experience_bottle");
+    form.button("§aKelola Semua Skill\n§7Pasang Skill & Pasif Dewamu", "textures/items/nether_star");
+    form.button("§cKembali ke Menu Utama", "textures/ui/cancel");
 
     form.show(player).then((res) => {
         if (res.canceled) return;
-        if (res.selection === 0) openSkillTreeMenu(player);
-        else if (res.selection === 1) openEquipUnifiedMenu(player);
-        else if (res.selection === 2) {
-            rpgData.enable3x3 = !is3x3Enabled;
-            savePlayerRpgData(player, rpgData);
-            player.sendMessage(`§a[RPG] Mode Hancur 3x3 sekarang ${rpgData.enable3x3 ? "NYALA" : "MATI"}.`);
-            openRpgMenu(player);
-        }
+        if (res.selection === 0) openRpgGuideMenu(player);
+        else if (res.selection === 1) openSkillTreeMenu(player);
+        else if (res.selection === 2) openEquipUnifiedMenu(player);
         else if (res.selection === 3) {
             system.runTimeout(() => { openMainMenu(player); }, 5);
         }
     });
 }
 
+function openRpgGuideMenu(player) {
+    const form = new ActionFormData();
+    form.title("§9[ Panduan Bermain RPG ]");
+    form.body("§e§l1. Cara Mendapatkan Level (XP)§r\nKamu mendapatkan XP dengan melakukan pekerjaan sesuai *Job*:\n- §bMining§f: Menambang batu atau ore di goa.\n- §aWoodcutting§f: Menebang pohon.\n- §cSlayer§f: Membunuh monster (Zombie, Skeleton, dll).\n\n§e§l2. Mendapatkan Skill Point (SP)§r\nSetiap kali *Job* kamu naik level, kamu akan mendapatkan 1 SP secara otomatis. Kamu bisa melihat jumlah SP kamu di Menu RPG utama.\n\n§e§l3. Menggunakan Skill Point (SP)§r\nMasuk ke menu §eSkill Tree (Beli Skill)§f. Di sana kamu bisa menukarkan SP dengan kemampuan khusus.\n\n§e§l4. Memasang Skill (Penting!)§r\nSetelah membeli skill, skill tersebut **BELUM AKTIF**. Kamu harus masuk ke menu §aKelola Semua Skill§f dan menceklis skill yang ingin dipakai. Kamu hanya bisa memakai **Maksimal 2 Skill Aktif** secara bersamaan. Pastikan untuk mencopot skill memecah batu saat membangun rumah agar bangunanmu tidak hancur berantakan!");
+    form.button("§cKembali ke Menu RPG");
+    form.show(player).then(() => {
+        openRpgMenu(player);
+    });
+}
+
 const AVAILABLE_SKILLS = [
-    { id: "ore_excavation", name: "⛏ Ore Excavation (Mining)", desc: "Hancurkan 3x3x3 blok batu/ore sekaligus saat fitur dinyalakan.", cost: 15 },
-    { id: "lumberjacks_sweep", name: "🪓 Lumberjack's Sweep (Woodcutting)", desc: "Tebang 3x3x3 blok kayu sekaligus saat fitur dinyalakan.", cost: 15 },
-    { id: "siphon_strike", name: "⚔ Siphon Strike (Slayer)", desc: "Menyembuhkan HP saat membunuh monster saat fitur dinyalakan.", cost: 20 }
+    { id: "ore_excavation", name: "⛏ Ore Excavation (Mining)", desc: "Menghancurkan batu/ore dalam area 3x3x3 sekaligus tanpa Cooldown. Sangat cocok untuk membuat goa instan.", cost: 15 },
+    { id: "treecapitator", name: "🪓 Treecapitator (Woodcutting)", desc: "Menghancurkan satu blok batang pohon akan otomatis meruntuhkan seluruh pohon ke atas.", cost: 15 },
+    { id: "cleave_strike", name: "⚔ Cleave Strike (Slayer)", desc: "Setiap serangan pada monster akan menyapu area sekitarnya (Sweep Attack). Cooldown: 3 Detik.", cost: 20 }
 ];
 
 function openSkillTreeMenu(player) {
@@ -1067,6 +1069,8 @@ function openListBountyMenu(player) {
     });
 }
 
+import { breakTreecapitator } from "./rpg_system.js";
+
 // RPG Triggers: Block Breaking (Mining & Woodcutting)
 world.afterEvents.playerBreakBlock.subscribe((event) => {
     const { player, brokenBlockPermutation, block } = event;
@@ -1074,7 +1078,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
 
     // Categorize block types
     const isWood = typeId.includes("log") || typeId.includes("stem") || typeId.includes("wood");
-    const isOre = typeId.includes("ore") || typeId.includes("stone") || typeId.includes("basalt") || typeId.includes("granite") || typeId.includes("diorite") || typeId.includes("andesite") || typeId.includes("netherrack");
+    const isOre = typeId.includes("ore") || typeId.includes("stone") || typeId.includes("basalt") || typeId.includes("granite") || typeId.includes("diorite") || typeId.includes("andesite") || typeId.includes("netherrack") || typeId.includes("deepslate");
 
     const rpgData = getPlayerRpgData(player);
 
@@ -1082,32 +1086,24 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
         // Base XP: 5 per log
         addXp(player, "woodcutting", 5);
 
-        // Active Skill: Lumberjack's Sweep
-        if (rpgData.enable3x3 && rpgData.equippedSkills.includes("lumberjacks_sweep")) {
-            if (canUseActiveSkill(player.name, "lumberjacks_sweep", 5000)) { // 5 second cooldown
-                const broken = breakBlockArea(player, block, 1, typeId);
-                if (broken > 0) {
-                    player.sendMessage(`§a[Skill] §fLumberjack's Sweep aktif! Menghancurkan §e${broken} balok kayu§f.`);
-                    addXp(player, "woodcutting", broken * 5);
-                }
-            } else {
-                player.onScreenDisplay.setActionBar("§cSkill 'Lumberjack's Sweep' masih cooldown!");
+        // Active Skill: Treecapitator (formerly Lumberjack's Sweep)
+        if (rpgData.equippedSkills.includes("treecapitator")) {
+            const broken = breakTreecapitator(player, block);
+            if (broken > 0) {
+                player.sendMessage(`§a[Skill] §fTreecapitator aktif! Menebang §e${broken} balok kayu sekaligus§f.`);
+                addXp(player, "woodcutting", broken * 5);
             }
         }
     } else if (isOre) {
         // Base XP: 3 per stone/ore
         addXp(player, "mining", 3);
 
-        // Active Skill: Ore Excavation
-        if (rpgData.enable3x3 && rpgData.equippedSkills.includes("ore_excavation")) {
-            if (canUseActiveSkill(player.name, "ore_excavation", 10000)) { // 10 second cooldown
-                const broken = breakBlockArea(player, block, 1, typeId);
-                if (broken > 0) {
-                    player.sendMessage(`§a[Skill] §fOre Excavation aktif! Menghancurkan §e${broken} blok mineral§f.`);
-                    addXp(player, "mining", broken * 3);
-                }
-            } else {
-                player.onScreenDisplay.setActionBar("§cSkill 'Ore Excavation' masih cooldown!");
+        // Active Skill: Ore Excavation (No Cooldown, No 3x3 toggle required)
+        if (rpgData.equippedSkills.includes("ore_excavation")) {
+            const broken = breakBlockArea(player, block, 1);
+            if (broken > 0) {
+                // Don't spam message on 0 CD, just give XP
+                addXp(player, "mining", broken * 3);
             }
         }
     }
@@ -1135,15 +1131,6 @@ world.afterEvents.entityDie.subscribe((event) => {
                 // Base XP: 10 per mob kill
                 addXp(killerPlayer, "slayer", 10);
                 slayerXpCooldowns.set(killerPlayer.name, Date.now());
-
-                const rpgData = getPlayerRpgData(killerPlayer);
-                // Active Skill: Siphon Strike
-                if (killerPlayer.isSneaking && rpgData.equippedSkills.includes("siphon_strike")) {
-                    if (canUseActiveSkill(killerPlayer.name, "siphon_strike", 15000)) { // 15s cooldown
-                        killerPlayer.addEffect("instant_health", 1, { amplifier: 0, showParticles: true });
-                        killerPlayer.sendMessage("§a[Skill] §fSiphon Strike aktif! HP dipulihkan.");
-                    }
-                }
             }
         }
 
@@ -1393,13 +1380,31 @@ function processSellAll(player) {
     }
 }
 
-// Handle Custom Gacha Combat Effects on Entity Hit
+// Handle Custom Gacha Combat Effects & Slayer Skills on Entity Hit
 world.afterEvents.entityHitEntity.subscribe((event) => {
     const attacker = event.damagingEntity;
     const target = event.hitEntity;
 
     if (!attacker || attacker.typeId !== "minecraft:player") return;
     if (!target) return;
+
+    // RPG Slayer Skill: Cleave Strike (Sweep Attack)
+    const isMonster = !target.typeId.includes("player") && !target.typeId.includes("item");
+    if (isMonster) {
+        const rpgData = getPlayerRpgData(attacker);
+        if (rpgData.equippedSkills.includes("cleave_strike")) {
+            if (canUseActiveSkill(attacker.name, "cleave_strike", 3000)) { // 3 seconds cooldown
+                // Perform sweep attack on nearby entities
+                try {
+                    const dimension = attacker.dimension;
+                    dimension.runCommandAsync(`damage @e[x=${target.location.x},y=${target.location.y},z=${target.location.z},r=3,rm=0.1,type=!player,type=!item] 6 entity_attack entity "${attacker.name}"`);
+                    dimension.spawnParticle("minecraft:sweep_attack_emitter", target.location);
+                    dimension.runCommandAsync(`playsound random.bow @a[x=${target.location.x},y=${target.location.y},z=${target.location.z},r=10] 1.0 0.5`);
+                    // Not adding message to avoid chat spam during combat
+                } catch(e) {}
+            }
+        }
+    }
 
     // Check main hand item for Gacha effects
     const invComponent = attacker.getComponent("inventory");
