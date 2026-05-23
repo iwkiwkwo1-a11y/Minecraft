@@ -1071,10 +1071,28 @@ function openListBountyMenu(player) {
 
 import { breakTreecapitator } from "./rpg_system.js";
 
+// Cooldown Tracker for Rare Ore Broadcasts to prevent spam from veins or 3x3 skill
+const oreBroadcastCooldowns = new Map();
+
 // RPG Triggers: Block Breaking (Mining & Woodcutting)
 world.afterEvents.playerBreakBlock.subscribe((event) => {
     const { player, brokenBlockPermutation, block } = event;
     const typeId = brokenBlockPermutation.type.id;
+
+    // Rare Ore Broadcast Logic
+    if (typeId === "minecraft:diamond_ore" || typeId === "minecraft:deepslate_diamond_ore") {
+        const lastTime = oreBroadcastCooldowns.get(`${player.name}_diamond`) || 0;
+        if (Date.now() - lastTime > 15000) { // 15 seconds cooldown
+            world.sendMessage(`§b[INFO] §f${player.name} baru saja menemukan §bDiamond§f!`);
+            oreBroadcastCooldowns.set(`${player.name}_diamond`, Date.now());
+        }
+    } else if (typeId === "minecraft:ancient_debris") {
+        const lastTime = oreBroadcastCooldowns.get(`${player.name}_debris`) || 0;
+        if (Date.now() - lastTime > 15000) {
+            world.sendMessage(`§5[INFO] §f${player.name} baru saja menemukan §5Ancient Debris§f!`);
+            oreBroadcastCooldowns.set(`${player.name}_debris`, Date.now());
+        }
+    }
 
     // Categorize block types
     const isWood = typeId.includes("log") || typeId.includes("stem") || typeId.includes("wood") || typeId.includes("hyphae") || typeId.includes("cherry_leaves");
