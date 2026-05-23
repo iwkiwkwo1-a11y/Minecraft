@@ -1077,17 +1077,25 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
     const typeId = brokenBlockPermutation.type.id;
 
     // Categorize block types
-    const isWood = typeId.includes("log") || typeId.includes("stem") || typeId.includes("wood");
-    const isOre = typeId.includes("ore") || typeId.includes("stone") || typeId.includes("basalt") || typeId.includes("granite") || typeId.includes("diorite") || typeId.includes("andesite") || typeId.includes("netherrack") || typeId.includes("deepslate");
+    const isWood = typeId.includes("log") || typeId.includes("stem") || typeId.includes("wood") || typeId.includes("hyphae") || typeId.includes("cherry_leaves");
+    const isOre = typeId.includes("ore") || typeId.includes("stone") || typeId.includes("basalt") || typeId.includes("granite") || typeId.includes("diorite") || typeId.includes("andesite") || typeId.includes("netherrack") || typeId.includes("deepslate") || typeId.includes("tuff") || typeId.includes("calcite") || typeId.includes("dripstone") || typeId.includes("amethyst") || typeId.includes("obsidian");
 
     const rpgData = getPlayerRpgData(player);
+
+    // Check main hand tool
+    const invComponent = player.getComponent("inventory");
+    let heldItem = "";
+    if (invComponent && invComponent.container) {
+        const item = invComponent.container.getItem(player.selectedSlotIndex);
+        if (item) heldItem = item.typeId;
+    }
 
     if (isWood) {
         // Base XP: 5 per log
         addXp(player, "woodcutting", 5);
 
-        // Active Skill: Treecapitator (formerly Lumberjack's Sweep)
-        if (rpgData.equippedSkills.includes("treecapitator")) {
+        // Active Skill: Treecapitator (Tool Requirement: Axe)
+        if (rpgData.equippedSkills.includes("treecapitator") && heldItem.includes("axe") && !heldItem.includes("pickaxe")) {
             const broken = breakTreecapitator(player, block);
             if (broken > 0) {
                 player.sendMessage(`§a[Skill] §fTreecapitator aktif! Menebang §e${broken} balok kayu sekaligus§f.`);
@@ -1098,8 +1106,8 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
         // Base XP: 3 per stone/ore
         addXp(player, "mining", 3);
 
-        // Active Skill: Ore Excavation (No Cooldown, No 3x3 toggle required)
-        if (rpgData.equippedSkills.includes("ore_excavation")) {
+        // Active Skill: Ore Excavation (Tool Requirement: Pickaxe)
+        if (rpgData.equippedSkills.includes("ore_excavation") && heldItem.includes("pickaxe")) {
             const broken = breakBlockArea(player, block, 1);
             if (broken > 0) {
                 // Don't spam message on 0 CD, just give XP
@@ -1392,13 +1400,28 @@ world.afterEvents.entityHitEntity.subscribe((event) => {
     const isMonster = !target.typeId.includes("player") && !target.typeId.includes("item");
     if (isMonster) {
         const rpgData = getPlayerRpgData(attacker);
-        if (rpgData.equippedSkills.includes("cleave_strike")) {
+
+        // Tool Requirement check for Slayer
+        const invComponent = attacker.getComponent("inventory");
+        let heldItem = "";
+        if (invComponent && invComponent.container) {
+            const item = invComponent.container.getItem(attacker.selectedSlotIndex);
+            if (item) heldItem = item.typeId;
+        }
+
+        const isHoldingWeapon = heldItem.includes("sword") || (heldItem.includes("axe") && !heldItem.includes("pickaxe"));
+
+        if (rpgData.equippedSkills.includes("cleave_strike") && isHoldingWeapon) {
             if (canUseActiveSkill(attacker.name, "cleave_strike", 3000)) { // 3 seconds cooldown
                 // Perform sweep attack on nearby entities
                 try {
                     const dimension = attacker.dimension;
                     dimension.runCommandAsync(`damage @e[x=${target.location.x},y=${target.location.y},z=${target.location.z},r=3,rm=0.1,type=!player,type=!item] 6 entity_attack entity "${attacker.name}"`);
+
+                    // Satisfying sound and huge particles for Cleave
+                    dimension.runCommandAsync(`particle minecraft:knockback_roar_particle ${target.location.x} ${target.location.y+1} ${target.location.z}`);
                     dimension.spawnParticle("minecraft:sweep_attack_emitter", target.location);
+                    dimension.runCommandAsync(`playsound random.anvil_land @a[x=${target.location.x},y=${target.location.y},z=${target.location.z},r=10] 1.0 2.0`);
                     dimension.runCommandAsync(`playsound random.bow @a[x=${target.location.x},y=${target.location.y},z=${target.location.z},r=10] 1.0 0.5`);
                     // Not adding message to avoid chat spam during combat
                 } catch(e) {}

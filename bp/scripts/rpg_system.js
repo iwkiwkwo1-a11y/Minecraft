@@ -129,7 +129,8 @@ export function breakBlockArea(player, originBlock, radius) {
         }
     }
 
-    // Play an extra satisfying crunch sound at the center
+    // Play an extra satisfying crunch sound at the center and particle explosion
+    dimension.runCommandAsync(`particle minecraft:huge_explosion_emitter ${originBlock.x} ${originBlock.y} ${originBlock.z}`);
     dimension.runCommandAsync(`playsound block.deepslate.break @a[x=${originBlock.x},y=${originBlock.y},z=${originBlock.z},r=10] 1.5 0.8`);
     dimension.runCommandAsync(`playsound random.explode @a[x=${originBlock.x},y=${originBlock.y},z=${originBlock.z},r=10] 0.5 1.5`);
 
@@ -177,6 +178,7 @@ export function breakTreecapitator(player, originBlock) {
     }
 
     if (brokenCount > 0) {
+        dimension.runCommandAsync(`particle minecraft:crop_growth_area_emitter ${originBlock.x} ${originBlock.y+1} ${originBlock.z}`);
         dimension.runCommandAsync(`playsound dig.wood @a[x=${originBlock.x},y=${originBlock.y},z=${originBlock.z},r=10] 1.5 0.8`);
     }
 
