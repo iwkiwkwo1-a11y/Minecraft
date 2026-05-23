@@ -98,6 +98,22 @@ export const EconomyConfig = {
         "minecraft:bookshelf": 5000,
         "minecraft:bed": 4000,
         "minecraft:scaffolding": 500,
+        "minecraft:jukebox": 150000,
+        "minecraft:note_block": 25000,
+        "minecraft:shroomlight": 12000,
+        "minecraft:end_rod": 25000,
+        "minecraft:campfire": 5000,
+        "minecraft:soul_campfire": 8000,
+        "minecraft:bell": 50000,
+        "minecraft:barrel": 1500,
+        "minecraft:composter": 1500,
+        "minecraft:loom": 2000,
+        "minecraft:stonecutter": 2000,
+        "minecraft:grindstone": 2500,
+        "minecraft:smithing_table": 5000,
+        "minecraft:cartography_table": 2500,
+        "minecraft:fletching_table": 2000,
+        "minecraft:cauldron": 8000,
 
         // Mob Drops & Materials
         "minecraft:string": 1000,
@@ -149,7 +165,15 @@ export const EconomyConfig = {
         "minecraft:dispenser": 30000,
         "minecraft:observer": 45000,
         "minecraft:iron_block": 75000,
-        "minecraft:gold_block": 110000
+        "minecraft:gold_block": 110000,
+        "minecraft:dropper": 25000,
+        "minecraft:comparator": 35000,
+        "minecraft:repeater": 20000,
+        "minecraft:daylight_detector": 40000,
+        "minecraft:target": 15000,
+        "minecraft:lightning_rod": 10000,
+        "minecraft:redstone_lamp": 12000,
+        "minecraft:tripwire_hook": 5000
     },
     // OP items with insane prices
     buyPoolOP: {

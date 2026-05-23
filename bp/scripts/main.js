@@ -1413,6 +1413,10 @@ world.afterEvents.entityHitEntity.subscribe((event) => {
     if (!attacker || attacker.typeId !== "minecraft:player") return;
     if (!target) return;
 
+    // Ensure target has health (is alive, not an armor stand, item frame, or minecart)
+    const targetHealth = target.getComponent("minecraft:health") || target.getComponent("health");
+    if (!targetHealth) return;
+
     // RPG Slayer Skill: Cleave Strike (Sweep Attack)
     const isMonster = !target.typeId.includes("player") && !target.typeId.includes("item");
     if (isMonster) {

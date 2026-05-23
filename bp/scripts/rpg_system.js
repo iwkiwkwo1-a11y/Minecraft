@@ -118,7 +118,12 @@ export function breakBlockArea(player, originBlock, radius) {
 
                     if (targetBlock && !targetBlock.isAir) {
                         const id = targetBlock.typeId;
-                        if (id !== "minecraft:bedrock" && id !== "minecraft:barrier" && id !== "minecraft:deny" && id !== "minecraft:allow" && id !== "minecraft:border_block") {
+
+                        // Anti-Grief Check: Only break natural terrain blocks
+                        const isNatural = id.includes("stone") || id.includes("ore") || id.includes("dirt") || id.includes("sand") || id.includes("gravel") || id.includes("deepslate") || id.includes("tuff") || id.includes("calcite") || id.includes("diorite") || id.includes("andesite") || id.includes("granite") || id.includes("basalt") || id.includes("netherrack") || id.includes("obsidian") || id.includes("ancient_debris");
+                        const isArtificial = id.includes("stairs") || id.includes("slab") || id.includes("wall") || id.includes("brick") || id.includes("cobblestone") || id.includes("smooth_stone");
+
+                        if (isNatural && !isArtificial && id !== "minecraft:bedrock" && id !== "minecraft:barrier" && id !== "minecraft:deny" && id !== "minecraft:allow" && id !== "minecraft:border_block") {
                             // destroy keyword causes block to drop its item and play breaking particles/sounds
                             dimension.runCommandAsync(`setblock ${bx} ${by} ${bz} air destroy`);
                             brokenCount++;
