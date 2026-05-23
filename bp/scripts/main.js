@@ -1226,8 +1226,65 @@ function formatItemName(id) {
 
 function getIconPath(id) {
     const cleanName = id.replace("minecraft:", "");
+
+    // Explicit manual overrides for items that break the heuristic (shows purple/black missing texture in UI)
+    const iconOverrides = {
+        "slime": "textures/items/slimeball",
+        "piston": "textures/blocks/piston_top_normal",
+        "sticky_piston": "textures/blocks/piston_top_sticky",
+        "hopper": "textures/items/hopper",
+        "dispenser": "textures/blocks/dispenser_front_horizontal",
+        "dropper": "textures/blocks/dropper_front_horizontal",
+        "observer": "textures/blocks/observer_front",
+        "comparator": "textures/items/comparator",
+        "repeater": "textures/items/repeater",
+        "daylight_detector": "textures/blocks/daylight_detector_top",
+        "target": "textures/blocks/target_top",
+        "lightning_rod": "textures/blocks/lightning_rod",
+        "redstone_lamp": "textures/blocks/redstone_lamp_off",
+        "tripwire_hook": "textures/blocks/trip_wire_source",
+        "jukebox": "textures/blocks/jukebox_top",
+        "note_block": "textures/blocks/noteblock",
+        "shroomlight": "textures/blocks/shroomlight",
+        "end_rod": "textures/blocks/end_rod",
+        "campfire": "textures/items/campfire",
+        "soul_campfire": "textures/items/soul_campfire",
+        "bell": "textures/items/bell",
+        "barrel": "textures/blocks/barrel_side",
+        "composter": "textures/blocks/composter_side",
+        "loom": "textures/blocks/loom_front",
+        "stonecutter": "textures/blocks/stonecutter_side",
+        "grindstone": "textures/blocks/grindstone_side",
+        "smithing_table": "textures/blocks/smithing_table_front",
+        "cartography_table": "textures/blocks/cartography_table_side2",
+        "fletching_table": "textures/blocks/fletching_table_front",
+        "cauldron": "textures/items/cauldron",
+        "oak_sapling": "textures/blocks/sapling_oak",
+        "spruce_sapling": "textures/blocks/sapling_spruce",
+        "birch_sapling": "textures/blocks/sapling_birch",
+        "jungle_sapling": "textures/blocks/sapling_jungle",
+        "acacia_sapling": "textures/blocks/sapling_acacia",
+        "dark_oak_sapling": "textures/blocks/sapling_roofed_oak",
+        "wheat_seeds": "textures/items/seeds_wheat",
+        "pumpkin_seeds": "textures/items/seeds_pumpkin",
+        "melon_seeds": "textures/items/seeds_melon",
+        "beetroot_seeds": "textures/items/seeds_beetroot",
+        "sugar_cane": "textures/items/reeds",
+        "kelp": "textures/items/kelp",
+        "iron_ingot": "textures/items/iron_ingot",
+        "gold_ingot": "textures/items/gold_ingot",
+        "copper_ingot": "textures/items/copper_ingot",
+        "raw_iron": "textures/items/raw_iron",
+        "raw_gold": "textures/items/raw_gold",
+        "raw_copper": "textures/items/raw_copper"
+    };
+
+    if (iconOverrides[cleanName]) {
+        return iconOverrides[cleanName];
+    }
+
     // Simplistic heuristic for standard Bedrock vanilla paths
-    if (cleanName.includes("log") || cleanName.includes("dirt") || cleanName.includes("sand") || cleanName.includes("stone") || cleanName.includes("block") || cleanName.includes("obsidian") || cleanName.includes("glass") || cleanName.includes("basalt") || cleanName.includes("ice") || cleanName.includes("ore")) {
+    if (cleanName.includes("log") || cleanName.includes("dirt") || cleanName.includes("sand") || cleanName.includes("stone") || cleanName.includes("block") || cleanName.includes("obsidian") || cleanName.includes("glass") || cleanName.includes("basalt") || cleanName.includes("ice") || cleanName.includes("ore") || cleanName.includes("planks")) {
         return `textures/blocks/${cleanName}`;
     }
     return `textures/items/${cleanName}`;
