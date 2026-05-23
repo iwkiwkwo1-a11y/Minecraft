@@ -121,16 +121,21 @@ world.beforeEvents.itemUseOn.subscribe((event) => {
             // Set block to chest
             targetBlock.setType("minecraft:chest");
 
+            // Create a ticking area to keep the farm running 24/7
+            const taName = `autosell_${x}_${y}_${z}`;
+            dim.runCommandAsync(`tickingarea add circle ${x} ${y} ${z} 1 "${taName}"`).catch(() => {});
+
             // Save to DB
             const db = getDb();
             db.push({
                 x, y, z,
                 dim: dim.id,
-                owner: player.name
+                owner: player.name,
+                taName: taName
             });
             saveDb(db);
 
-            player.sendMessage("§a[System] Mesin Auto-Sell berhasil dipasang dan terhubung ke dompet Anda!");
+            player.sendMessage("§a[System] Mesin Auto-Sell dipasang! Area farm ini sekarang aktif 24 jam penuh tanpa perlu dijaga!");
         });
     }
 });
@@ -153,6 +158,10 @@ world.beforeEvents.playerBreakBlock.subscribe((event) => {
                 let currentDb = getDb();
                 const currentIndex = currentDb.findIndex(c => c.x === block.x && c.y === block.y && c.z === block.z && c.dim === dimId);
                 if (currentIndex !== -1) {
+                    const chestData = currentDb[currentIndex];
+                    if (chestData.taName) {
+                        event.dimension.runCommandAsync(`tickingarea remove "${chestData.taName}"`).catch(() => {});
+                    }
                     currentDb.splice(currentIndex, 1);
                     saveDb(currentDb);
                 }
@@ -195,6 +204,9 @@ system.runInterval(() => {
             // Verify it's still a chest (maybe destroyed by creeper)
             if (block.typeId !== "minecraft:chest") {
                 // Chest was destroyed by something other than a player. Remove from DB to prevent memory leak.
+                if (chest.taName) {
+                    dim.runCommandAsync(`tickingarea remove "${chest.taName}"`).catch(() => {});
+                }
                 db.splice(db.indexOf(chest), 1);
                 saveDb(db);
                 continue;
