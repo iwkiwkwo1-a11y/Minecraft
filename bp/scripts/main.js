@@ -1116,7 +1116,6 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
         if (rpgData.equippedSkills.includes("treecapitator") && heldItem.includes("axe") && !heldItem.includes("pickaxe")) {
             const broken = breakTreecapitator(player, block);
             if (broken > 0) {
-                player.sendMessage(`§a[Skill] §fTreecapitator aktif! Menebang §e${broken} balok kayu sekaligus§f.`);
                 addXp(player, "woodcutting", broken * 5);
             }
         }

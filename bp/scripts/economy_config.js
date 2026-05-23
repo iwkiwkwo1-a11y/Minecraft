@@ -139,7 +139,17 @@ export const EconomyConfig = {
         "minecraft:basalt": 1000,
         "minecraft:blackstone": 1000,
         "minecraft:end_stone": 2000,
-        "minecraft:purpur_block": 5000
+        "minecraft:purpur_block": 5000,
+
+        // Redstone & Mekanik
+        "minecraft:slime": 50000,
+        "minecraft:piston": 25000,
+        "minecraft:sticky_piston": 75000,
+        "minecraft:hopper": 60000,
+        "minecraft:dispenser": 30000,
+        "minecraft:observer": 45000,
+        "minecraft:iron_block": 75000,
+        "minecraft:gold_block": 110000
     },
     // OP items with insane prices
     buyPoolOP: {
