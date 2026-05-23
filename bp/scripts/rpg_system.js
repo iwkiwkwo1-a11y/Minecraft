@@ -22,7 +22,34 @@ export function getPlayerRpgData(player) {
     try {
         const str = player.getDynamicProperty("rpg_data");
         if (str && typeof str === 'string') {
-            return { ...defaultData, ...JSON.parse(str) };
+            let data = { ...defaultData, ...JSON.parse(str) };
+
+            // Migration for old skills
+            let needsSave = false;
+
+            if (data.unlockedSkills.includes("lumberjacks_sweep")) {
+                data.unlockedSkills = data.unlockedSkills.map(s => s === "lumberjacks_sweep" ? "treecapitator" : s);
+                needsSave = true;
+            }
+            if (data.equippedSkills.includes("lumberjacks_sweep")) {
+                data.equippedSkills = data.equippedSkills.map(s => s === "lumberjacks_sweep" ? "treecapitator" : s);
+                needsSave = true;
+            }
+
+            if (data.unlockedSkills.includes("siphon_strike")) {
+                data.unlockedSkills = data.unlockedSkills.map(s => s === "siphon_strike" ? "cleave_strike" : s);
+                needsSave = true;
+            }
+            if (data.equippedSkills.includes("siphon_strike")) {
+                data.equippedSkills = data.equippedSkills.map(s => s === "siphon_strike" ? "cleave_strike" : s);
+                needsSave = true;
+            }
+
+            if (needsSave) {
+                savePlayerRpgData(player, data);
+            }
+
+            return data;
         }
     } catch(e) {}
     return defaultData;
@@ -71,30 +98,90 @@ export function generateXpBar(xp, maxXp) {
 }
 
 // Helper to execute block breaking recursively for active skills
-export function breakBlockArea(player, originBlock, radius, typeId) {
+export function breakBlockArea(player, originBlock, radius) {
     const dimension = player.dimension;
     let brokenCount = 0;
+
+    // Hardcoded safety limits to prevent crashing the server
+    if (radius > 2) radius = 2;
 
     for (let x = -radius; x <= radius; x++) {
         for (let y = -radius; y <= radius; y++) {
             for (let z = -radius; z <= radius; z++) {
                 if (x === 0 && y === 0 && z === 0) continue; // Original block already broken
                 try {
-                    const targetBlock = dimension.getBlock({
-                        x: originBlock.x + x,
-                        y: originBlock.y + y,
-                        z: originBlock.z + z
-                    });
+                    const bx = originBlock.x + x;
+                    const by = originBlock.y + y;
+                    const bz = originBlock.z + z;
 
-                    if (targetBlock && targetBlock.typeId === typeId) {
-                        // Use dimension runCommandAsync to bypass player OP permissions
-                        dimension.runCommandAsync(`setblock ${targetBlock.x} ${targetBlock.y} ${targetBlock.z} air destroy`);
-                        brokenCount++;
+                    const targetBlock = dimension.getBlock({ x: bx, y: by, z: bz });
+
+                    if (targetBlock && !targetBlock.isAir) {
+                        const id = targetBlock.typeId;
+                        if (id !== "minecraft:bedrock" && id !== "minecraft:barrier" && id !== "minecraft:deny" && id !== "minecraft:allow" && id !== "minecraft:border_block") {
+                            // destroy keyword causes block to drop its item and play breaking particles/sounds
+                            dimension.runCommandAsync(`setblock ${bx} ${by} ${bz} air destroy`);
+                            brokenCount++;
+                        }
                     }
                 } catch(e) {}
             }
         }
     }
+
+    // Play an extra satisfying crunch sound at the center and particle explosion
+    dimension.runCommandAsync(`particle minecraft:huge_explosion_emitter ${originBlock.x} ${originBlock.y} ${originBlock.z}`);
+    dimension.runCommandAsync(`playsound block.deepslate.break @a[x=${originBlock.x},y=${originBlock.y},z=${originBlock.z},r=10] 1.5 0.8`);
+    dimension.runCommandAsync(`playsound random.explode @a[x=${originBlock.x},y=${originBlock.y},z=${originBlock.z},r=10] 0.5 1.5`);
+
+    return brokenCount;
+}
+
+export function breakTreecapitator(player, originBlock) {
+    const dimension = player.dimension;
+    let brokenCount = 0;
+    let blocksToProcess = [{ x: originBlock.x, y: originBlock.y, z: originBlock.z }];
+    let processedBlocks = new Set();
+    const maxLogs = 64; // Limit to prevent server lag
+
+    // Add original block to processed to avoid checking it again
+    processedBlocks.add(`${originBlock.x},${originBlock.y},${originBlock.z}`);
+
+    while (blocksToProcess.length > 0 && brokenCount < maxLogs) {
+        const current = blocksToProcess.shift();
+
+        // Check 3x3x3 around the current block, but only upwards and same level to simulate a tree
+        for (let x = -1; x <= 1; x++) {
+            for (let y = 0; y <= 1; y++) {
+                for (let z = -1; z <= 1; z++) {
+                    if (x === 0 && y === 0 && z === 0) continue;
+
+                    const bx = current.x + x;
+                    const by = current.y + y;
+                    const bz = current.z + z;
+                    const key = `${bx},${by},${bz}`;
+
+                    if (!processedBlocks.has(key)) {
+                        processedBlocks.add(key);
+                        try {
+                            const targetBlock = dimension.getBlock({ x: bx, y: by, z: bz });
+                            if (targetBlock && (targetBlock.typeId.includes("log") || targetBlock.typeId.includes("wood") || targetBlock.typeId.includes("stem"))) {
+                                dimension.runCommandAsync(`setblock ${bx} ${by} ${bz} air destroy`);
+                                brokenCount++;
+                                blocksToProcess.push({ x: bx, y: by, z: bz });
+                            }
+                        } catch(e) {}
+                    }
+                }
+            }
+        }
+    }
+
+    if (brokenCount > 0) {
+        dimension.runCommandAsync(`particle minecraft:crop_growth_area_emitter ${originBlock.x} ${originBlock.y+1} ${originBlock.z}`);
+        dimension.runCommandAsync(`playsound dig.wood @a[x=${originBlock.x},y=${originBlock.y},z=${originBlock.z},r=10] 1.5 0.8`);
+    }
+
     return brokenCount;
 }
 

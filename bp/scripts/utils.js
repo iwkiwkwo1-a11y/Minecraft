@@ -35,7 +35,7 @@ export function getUiHeader(player) {
     return `§fSaldo: §e${formatRupiah(rupiah)} §f| Core: §b${core} §f| Pangkat: ${rank}\n§7----------------------------------§r\n`;
 }
 
-export function sendToInbox(targetName, senderName, amount, message) {
+export function sendToInbox(targetName, senderName, amount, message, itemPayload = null) {
     try {
         const inboxDataStr = world.getDynamicProperty(`inbox_${targetName}`);
         let inbox = [];
@@ -47,7 +47,8 @@ export function sendToInbox(targetName, senderName, amount, message) {
             sender: senderName,
             amount: amount,
             message: message,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            item: itemPayload // { typeId: "minecraft:apple", amount: 10 }
         });
 
         world.setDynamicProperty(`inbox_${targetName}`, JSON.stringify(inbox));
