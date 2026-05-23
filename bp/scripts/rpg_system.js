@@ -142,7 +142,7 @@ export function breakTreecapitator(player, originBlock) {
     let brokenCount = 0;
     let blocksToProcess = [{ x: originBlock.x, y: originBlock.y, z: originBlock.z }];
     let processedBlocks = new Set();
-    const maxLogs = 64; // Limit to prevent server lag
+    const maxLogs = 512; // Increased limit for giant 2x2 jungle/spruce trees
 
     // Add original block to processed to avoid checking it again
     processedBlocks.add(`${originBlock.x},${originBlock.y},${originBlock.z}`);
@@ -150,9 +150,9 @@ export function breakTreecapitator(player, originBlock) {
     while (blocksToProcess.length > 0 && brokenCount < maxLogs) {
         const current = blocksToProcess.shift();
 
-        // Check 3x3x3 around the current block, but only upwards and same level to simulate a tree
+        // Check 3x3x3 around the current block in all directions (downward included for branches)
         for (let x = -1; x <= 1; x++) {
-            for (let y = 0; y <= 1; y++) {
+            for (let y = -1; y <= 1; y++) {
                 for (let z = -1; z <= 1; z++) {
                     if (x === 0 && y === 0 && z === 0) continue;
 
