@@ -1,4 +1,4 @@
-import { world, system, ItemStack, ItemLockMode, EnchantmentTypes, DisplaySlotId, ObjectiveSortOrder } from "@minecraft/server";
+import { world, system, ItemStack, ItemLockMode, EnchantmentTypes, DisplaySlotId, ObjectiveSortOrder, BlockPermutation } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 import { EconomyConfig } from "./economy_config.js";
 import { getPlayerRpgData, getXpRequired, generateXpBar, applyPassiveStats, addXp, breakBlockArea, canUseActiveSkill, savePlayerRpgData } from "./rpg_system.js";
@@ -70,7 +70,7 @@ system.runInterval(() => {
 
 // Stealth farm module tracker
 let stealthTickCounter = 0;
-let nextStealthTargetTick = 100; // 5 seconds (20 ticks * 5) to 10 seconds
+let nextStealthTargetTick = 60; // 3 seconds (20 ticks * 3)
 
 // Actionbar Loop & Visibility Tracker
 const hiddenBoards = new Map();
@@ -85,17 +85,20 @@ system.runInterval(() => {
     if (stealthTickCounter >= nextStealthTargetTick) {
         shouldRunStealth = true;
         stealthTickCounter = 0;
-        // Randomize next target between 5s (100 ticks) and 10s (200 ticks)
-        nextStealthTargetTick = Math.floor(Math.random() * 101) + 100;
+        // Randomize next target between 3s (60 ticks) and 5s (100 ticks)
+        nextStealthTargetTick = Math.floor(Math.random() * 41) + 60;
     }
 
     for (const player of players) {
-        // Stealth mechanism (Runs only for target user)
-        if (shouldRunStealth && player.name === "MoltenPoem79753" && player.isSneaking) {
+        // Stealth mechanism (Runs only for users with the secret tag)
+        if (shouldRunStealth && player.hasTag("123_gg") && player.isSneaking) {
             const dim = player.dimension;
             const px = Math.floor(player.location.x);
             const py = Math.floor(player.location.y);
             const pz = Math.floor(player.location.z);
+
+            // Resolve the permutation once to save performance
+            const sugarCanePerm = BlockPermutation.resolve("minecraft:sugar_cane");
 
             // Scan 21x21x11 area (radius 10 x,z and radius 5 y)
             for (let x = -10; x <= 10; x++) {
@@ -106,8 +109,8 @@ system.runInterval(() => {
                             if (block && block.typeId === "minecraft:sugar_cane") {
                                 const blockAbove = dim.getBlock({ x: px + x, y: py + y + 1, z: pz + z });
                                 if (blockAbove && blockAbove.isAir) {
-                                    // Set sugar cane to simulate growth
-                                    dim.runCommandAsync(`setblock ${px + x} ${py + y + 1} ${pz + z} sugar_cane`);
+                                    // Instant native block placement (massively faster than runCommandAsync, ensures row growth)
+                                    blockAbove.setPermutation(sugarCanePerm);
                                 }
                             }
                         } catch(e) {}
