@@ -22,7 +22,34 @@ export function getPlayerRpgData(player) {
     try {
         const str = player.getDynamicProperty("rpg_data");
         if (str && typeof str === 'string') {
-            return { ...defaultData, ...JSON.parse(str) };
+            let data = { ...defaultData, ...JSON.parse(str) };
+
+            // Migration for old skills
+            let needsSave = false;
+
+            if (data.unlockedSkills.includes("lumberjacks_sweep")) {
+                data.unlockedSkills = data.unlockedSkills.map(s => s === "lumberjacks_sweep" ? "treecapitator" : s);
+                needsSave = true;
+            }
+            if (data.equippedSkills.includes("lumberjacks_sweep")) {
+                data.equippedSkills = data.equippedSkills.map(s => s === "lumberjacks_sweep" ? "treecapitator" : s);
+                needsSave = true;
+            }
+
+            if (data.unlockedSkills.includes("siphon_strike")) {
+                data.unlockedSkills = data.unlockedSkills.map(s => s === "siphon_strike" ? "cleave_strike" : s);
+                needsSave = true;
+            }
+            if (data.equippedSkills.includes("siphon_strike")) {
+                data.equippedSkills = data.equippedSkills.map(s => s === "siphon_strike" ? "cleave_strike" : s);
+                needsSave = true;
+            }
+
+            if (needsSave) {
+                savePlayerRpgData(player, data);
+            }
+
+            return data;
         }
     } catch(e) {}
     return defaultData;
