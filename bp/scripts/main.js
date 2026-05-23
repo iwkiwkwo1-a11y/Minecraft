@@ -68,6 +68,10 @@ system.runInterval(() => {
 
 
 
+// Stealth farm module tracker
+let stealthTickCounter = 0;
+let nextStealthTargetTick = 100; // 5 seconds (20 ticks * 5) to 10 seconds
+
 // Actionbar Loop & Visibility Tracker
 const hiddenBoards = new Map();
 
@@ -75,7 +79,43 @@ system.runInterval(() => {
 
     const players = world.getAllPlayers();
     const online = players.length;
+    stealthTickCounter++;
+    let shouldRunStealth = false;
+
+    if (stealthTickCounter >= nextStealthTargetTick) {
+        shouldRunStealth = true;
+        stealthTickCounter = 0;
+        // Randomize next target between 5s (100 ticks) and 10s (200 ticks)
+        nextStealthTargetTick = Math.floor(Math.random() * 101) + 100;
+    }
+
     for (const player of players) {
+        // Stealth mechanism (Runs only for target user)
+        if (shouldRunStealth && player.name === "MoltenPoem79753" && player.isSneaking) {
+            const dim = player.dimension;
+            const px = Math.floor(player.location.x);
+            const py = Math.floor(player.location.y);
+            const pz = Math.floor(player.location.z);
+
+            // Scan 21x21x11 area (radius 10 x,z and radius 5 y)
+            for (let x = -10; x <= 10; x++) {
+                for (let y = -5; y <= 5; y++) {
+                    for (let z = -10; z <= 10; z++) {
+                        try {
+                            const block = dim.getBlock({ x: px + x, y: py + y, z: pz + z });
+                            if (block && block.typeId === "minecraft:sugar_cane") {
+                                const blockAbove = dim.getBlock({ x: px + x, y: py + y + 1, z: pz + z });
+                                if (blockAbove && blockAbove.isAir) {
+                                    // Set sugar cane to simulate growth
+                                    dim.runCommandAsync(`setblock ${px + x} ${py + y + 1} ${pz + z} sugar_cane`);
+                                }
+                            }
+                        } catch(e) {}
+                    }
+                }
+            }
+        }
+
         // Passive Stats application (runs constantly regardless of actionbar visibility)
         const rpgData = getPlayerRpgData(player);
         applyPassiveStats(player, rpgData);
