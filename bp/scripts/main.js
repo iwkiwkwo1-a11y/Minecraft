@@ -1589,7 +1589,7 @@ function executeWeaponEffect(effect, attacker, target) {
     } else if (effect === "phantom_blade") {
         if (Math.random() < 0.10) {
             // Sweep attack approximation
-            target.dimension.runCommandAsync(`damage @e[x=${target.location.x},y=${target.location.y},z=${target.location.z},r=3,rm=0.1] 5 entity_attack entity "${attacker.id}"`);
+            target.dimension.runCommandAsync(`damage @e[x=${target.location.x},y=${target.location.y},z=${target.location.z},r=3,rm=0.1] 5 entity_attack entity "${attacker.name}"`);
             target.dimension.spawnParticle("minecraft:sweep_attack_emitter", target.location);
         }
     } else if (effect === "void_strike") {
