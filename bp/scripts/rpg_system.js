@@ -1,4 +1,4 @@
-import { world, system } from "@minecraft/server";
+import { world, system, ItemStack } from "@minecraft/server";
 
 export const MAX_LEVEL = 50;
 
@@ -98,9 +98,24 @@ export function generateXpBar(xp, maxXp) {
 }
 
 // Helper to execute block breaking recursively for active skills
-export function breakBlockArea(player, originBlock, radius) {
+export function breakBlockArea(player, originBlock, radius, mainHandItem) {
     const dimension = player.dimension;
     let brokenCount = 0;
+
+    // Check Fortune level on main hand item
+    let fortuneLevel = 0;
+    if (mainHandItem) {
+        const enchantable = mainHandItem.getComponent("enchantable") || mainHandItem.getComponent("minecraft:enchantable");
+        if (enchantable) {
+            try {
+                // Attempt to get fortune level. @minecraft/server versions vary on enchantment handling.
+                const fortuneEnchant = enchantable.getEnchantment("fortune");
+                if (fortuneEnchant) {
+                    fortuneLevel = fortuneEnchant.level;
+                }
+            } catch(e) {}
+        }
+    }
 
     // Hardcoded safety limits to prevent crashing the server
     if (radius > 2) radius = 2;
@@ -118,8 +133,49 @@ export function breakBlockArea(player, originBlock, radius) {
 
                     if (targetBlock && !targetBlock.isAir) {
                         const id = targetBlock.typeId;
-                        if (id !== "minecraft:bedrock" && id !== "minecraft:barrier" && id !== "minecraft:deny" && id !== "minecraft:allow" && id !== "minecraft:border_block") {
-                            // destroy keyword causes block to drop its item and play breaking particles/sounds
+
+                        // Anti-Grief Check: Only break natural terrain blocks
+                        const isNatural = id.includes("stone") || id.includes("ore") || id.includes("dirt") || id.includes("sand") || id.includes("gravel") || id.includes("deepslate") || id.includes("tuff") || id.includes("calcite") || id.includes("diorite") || id.includes("andesite") || id.includes("granite") || id.includes("basalt") || id.includes("netherrack") || id.includes("obsidian") || id.includes("ancient_debris");
+                        const isArtificial = id.includes("stairs") || id.includes("slab") || id.includes("wall") || id.includes("brick") || id.includes("cobblestone") || id.includes("smooth_stone");
+
+                        if (isNatural && !isArtificial && id !== "minecraft:bedrock" && id !== "minecraft:barrier" && id !== "minecraft:deny" && id !== "minecraft:allow" && id !== "minecraft:border_block") {
+
+                            // Custom Fortune Logic for Ores
+                            if (fortuneLevel > 0 && id.includes("ore")) {
+                                // Calculate extra drops (Vanilla Fortune roughly: level 1 = 33% chance for x2, level 2 = 25% chance each for x2,x3)
+                                // Simplified implementation for performance
+                                let extraMultiplier = 1;
+                                const roll = Math.random();
+                                if (fortuneLevel === 1 && roll < 0.33) extraMultiplier = 2;
+                                else if (fortuneLevel === 2) extraMultiplier = roll < 0.25 ? 3 : (roll < 0.5 ? 2 : 1);
+                                else if (fortuneLevel >= 3) extraMultiplier = roll < 0.2 ? 4 : (roll < 0.4 ? 3 : (roll < 0.6 ? 2 : 1));
+
+                                if (extraMultiplier > 1) {
+                                    // Spawn extra drops directly. We map ore to its raw drop.
+                                    let dropItem = "";
+                                    if (id.includes("diamond")) dropItem = "minecraft:diamond";
+                                    else if (id.includes("emerald")) dropItem = "minecraft:emerald";
+                                    else if (id.includes("coal")) dropItem = "minecraft:coal";
+                                    else if (id.includes("iron")) dropItem = "minecraft:raw_iron";
+                                    else if (id.includes("gold")) dropItem = "minecraft:raw_gold";
+                                    else if (id.includes("copper")) dropItem = "minecraft:raw_copper";
+                                    else if (id.includes("lapis")) dropItem = "minecraft:lapis_lazuli";
+                                    else if (id.includes("redstone")) dropItem = "minecraft:redstone";
+                                    else if (id.includes("quartz")) dropItem = "minecraft:quartz";
+                                    else if (id.includes("amethyst")) dropItem = "minecraft:amethyst_shard";
+
+                                    if (dropItem !== "") {
+                                        // We spawn (extraMultiplier - 1) because the block destruction itself will drop 1
+                                        const extraCount = extraMultiplier - 1;
+                                        try {
+                                            const itemStack = new ItemStack(dropItem, extraCount);
+                                            dimension.spawnItem(itemStack, {x: bx + 0.5, y: by + 0.5, z: bz + 0.5});
+                                        } catch(e) {}
+                                    }
+                                }
+                            }
+
+                            // destroy keyword causes block to drop its base item
                             dimension.runCommandAsync(`setblock ${bx} ${by} ${bz} air destroy`);
                             brokenCount++;
                         }
@@ -128,11 +184,6 @@ export function breakBlockArea(player, originBlock, radius) {
             }
         }
     }
-
-    // Play an extra satisfying crunch sound at the center and particle explosion
-    dimension.runCommandAsync(`particle minecraft:huge_explosion_emitter ${originBlock.x} ${originBlock.y} ${originBlock.z}`);
-    dimension.runCommandAsync(`playsound block.deepslate.break @a[x=${originBlock.x},y=${originBlock.y},z=${originBlock.z},r=10] 1.5 0.8`);
-    dimension.runCommandAsync(`playsound random.explode @a[x=${originBlock.x},y=${originBlock.y},z=${originBlock.z},r=10] 0.5 1.5`);
 
     return brokenCount;
 }
@@ -175,11 +226,6 @@ export function breakTreecapitator(player, originBlock) {
                 }
             }
         }
-    }
-
-    if (brokenCount > 0) {
-        dimension.runCommandAsync(`particle minecraft:crop_growth_area_emitter ${originBlock.x} ${originBlock.y+1} ${originBlock.z}`);
-        dimension.runCommandAsync(`playsound dig.wood @a[x=${originBlock.x},y=${originBlock.y},z=${originBlock.z},r=10] 1.5 0.8`);
     }
 
     return brokenCount;

@@ -98,6 +98,22 @@ export const EconomyConfig = {
         "minecraft:bookshelf": 5000,
         "minecraft:bed": 4000,
         "minecraft:scaffolding": 500,
+        "minecraft:jukebox": 150000,
+        "minecraft:note_block": 25000,
+        "minecraft:shroomlight": 12000,
+        "minecraft:end_rod": 25000,
+        "minecraft:campfire": 5000,
+        "minecraft:soul_campfire": 8000,
+        "minecraft:bell": 50000,
+        "minecraft:barrel": 1500,
+        "minecraft:composter": 1500,
+        "minecraft:loom": 2000,
+        "minecraft:stonecutter": 2000,
+        "minecraft:grindstone": 2500,
+        "minecraft:smithing_table": 5000,
+        "minecraft:cartography_table": 2500,
+        "minecraft:fletching_table": 2000,
+        "minecraft:cauldron": 8000,
 
         // Mob Drops & Materials
         "minecraft:string": 1000,
@@ -114,6 +130,14 @@ export const EconomyConfig = {
         "minecraft:blaze_rod": 20000,
         "minecraft:phantom_membrane": 10000,
         "minecraft:shulker_shell": 50000,
+        "minecraft:bone_block": 5000,
+        "minecraft:spider_web": 8000,
+        "minecraft:ender_eye": 25000,
+        "minecraft:honeycomb": 3000,
+        "minecraft:honey_block": 10000,
+        "minecraft:scute": 20000,
+        "minecraft:turtle_helmet": 75000,
+        "minecraft:nautilus_shell": 50000,
 
         // Misc & Petualangan
         "minecraft:arrow": 1000,
@@ -139,7 +163,25 @@ export const EconomyConfig = {
         "minecraft:basalt": 1000,
         "minecraft:blackstone": 1000,
         "minecraft:end_stone": 2000,
-        "minecraft:purpur_block": 5000
+        "minecraft:purpur_block": 5000,
+
+        // Redstone & Mekanik
+        "minecraft:slime": 50000,
+        "minecraft:piston": 25000,
+        "minecraft:sticky_piston": 75000,
+        "minecraft:hopper": 60000,
+        "minecraft:dispenser": 30000,
+        "minecraft:observer": 45000,
+        "minecraft:iron_block": 75000,
+        "minecraft:gold_block": 110000,
+        "minecraft:dropper": 25000,
+        "minecraft:comparator": 35000,
+        "minecraft:repeater": 20000,
+        "minecraft:daylight_detector": 40000,
+        "minecraft:target": 15000,
+        "minecraft:lightning_rod": 10000,
+        "minecraft:redstone_lamp": 12000,
+        "minecraft:tripwire_hook": 5000
     },
     // OP items with insane prices
     buyPoolOP: {

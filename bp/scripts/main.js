@@ -25,48 +25,8 @@ system.run(() => {
     }
 });
 
-// Shop Rotation State
+// Permanent Shop State
 let currentShopItems = [];
-let nextRefreshTime = Date.now() + 60000; // 1 minute from now
-
-function refreshShop() {
-    const normalKeys = Object.keys(EconomyConfig.buyPoolNormal);
-    const opKeys = Object.keys(EconomyConfig.buyPoolOP);
-
-    // Shuffle arrays
-    normalKeys.sort(() => 0.5 - Math.random());
-    opKeys.sort(() => 0.5 - Math.random());
-
-    currentShopItems = [];
-
-    // Pick 29 random normal items
-    const selectedNormals = normalKeys.slice(0, 29);
-    for (const key of selectedNormals) {
-        currentShopItems.push({ id: key, price: EconomyConfig.buyPoolNormal[key], isOP: false });
-    }
-
-    // Pick 1 random OP item
-    const selectedOP = opKeys[0];
-    currentShopItems.push({ id: selectedOP, price: EconomyConfig.buyPoolOP[selectedOP], isOP: true });
-
-    // Shuffle the final list so the OP item isn't always last
-    currentShopItems.sort(() => 0.5 - Math.random());
-
-    nextRefreshTime = Date.now() + 60000;
-}
-
-// Initial shop load
-refreshShop();
-
-// Shop Rotation Timer (Checks every 20 ticks)
-system.runInterval(() => {
-    if (Date.now() >= nextRefreshTime) {
-        refreshShop();
-        // world.sendMessage("§e[Shop] §fBarang jualan di Menu Beli telah diperbarui! Cek sekarang!");
-    }
-}, 20);
-
-
 
 // Actionbar Loop & Visibility Tracker
 const hiddenBoards = new Map();
@@ -257,7 +217,7 @@ function openGuideBook(player) {
     form.show(player);
 }
 
-// UI Logic - Main Menu
+// UI Logic - Main Menu (Modern Categorized)
 export function openMainMenu(player) {
     const rankBadge = getPlayerRank(player).badge;
     const score = getScore(player, "dompet");
@@ -265,66 +225,99 @@ export function openMainMenu(player) {
     const online = world.getAllPlayers().length;
 
     const form = new ActionFormData();
-    form.title("§1[ Server Menu Utama ]");
-    form.body(`${rankBadge}\n§e§lDOMPET: §f${formatRupiah(score)}\n§b§lCORE: §f${coreScore}\n§aOnline: ${online} Pemain`);
-    form.button("§e§lMenu Beli Barang\n§7Klik untuk beli kebutuhan", "textures/items/emerald");
-    form.button("§a§lMenu Jual Barang\n§7Pindah & Filter Rupiah", "textures/items/gold_ingot");
-    form.button("§2§lBeli Mesin Auto-Sell\n§7Otomatis Jual Hasil Farm", "textures/blocks/chest_front");
-    form.button("§b§lTransfer\n§7Kirim Rupiah/Barang", "textures/items/paper");
-    form.button("§c§lSistem Bounty\n§7Pasang buronan", "textures/items/iron_sword");
-    form.button("§6§lTop Sultan\n§7Peringkat pemain terkaya", "textures/items/diamond");
-    form.button("§d§lMenu RPG & Skill\n§7Level & Kemampuan Aktif", "textures/items/diamond_sword");
-    form.button("§5§lGacha & Core\n§7Sihir Senjata & Pasif Dewa", "textures/blocks/enchanting_table_top");
-    form.button("§4§lTroll Pemain\n§7Berikan kejutan ke pemain lain (Rp1 Juta)", "textures/blocks/tnt_side");
-    form.button("§6§lSistem Pangkat\n§7Tingkatkan Rank & Diskon", "textures/items/nether_star");
-    form.button("§3§lTeleportasi & Home\n§7Navigasi Cepat (RTP)", "textures/items/compass_item");
+    form.title("§1[ Pusat Server Pro ]");
+    form.body(`${rankBadge}\n§e§lDOMPET: §f${formatRupiah(score)}\n§b§lCORE: §f${coreScore}\n§aOnline: ${online} Pemain\n\n§7Pilih menu layanan di bawah ini:`);
+
+    form.button("§e§lPusat Ekonomi\n§7Beli, Jual, Transfer, Auto-Sell", "textures/items/emerald");
+    form.button("§d§lPetualangan & Kekuatan\n§7RPG, Skill, Gacha, Core", "textures/items/diamond_sword");
+    form.button("§b§lSosial & Utilitas\n§7Top Sultan, Bounty, Pangkat, Navigasi", "textures/ui/FriendsIcon");
 
     const unreadCount = getInbox(player.name).length;
     if (unreadCount > 0) {
-        form.button(`§e§lPesan Masuk (${unreadCount})\n§7Ambil kiriman Rupiah`, "textures/items/book_writable");
+        form.button(`§a§lKotak Masuk (${unreadCount})\n§7Ada pesan/paket baru!`, "textures/items/book_writable");
     } else {
-        form.button(`§7Pesan Masuk (0)\n§7Tidak ada pesan`, "textures/items/book_normal");
+        form.button(`§7Kotak Masuk (0)\n§7Tidak ada pesan`, "textures/items/book_normal");
     }
 
     form.show(player).then((response) => {
         if (response.canceled) return;
         switch (response.selection) {
             case 0:
-                openBuyMenu(player);
+                openEconomyMenu(player);
                 break;
             case 1:
-                openSellChoiceMenu(player);
+                openRpgGachaMenu(player);
                 break;
             case 2:
-                openAutoSellMenu(player);
+                openSocialMenu(player);
                 break;
             case 3:
-                openTransferChoiceMenu(player);
-                break;
-            case 4:
-                openBountyMenu(player);
-                break;
-            case 5:
-                openTopKoinMenu(player);
-                break;
-            case 6:
-                openRpgMenu(player);
-                break;
-            case 7:
-                openGachaMenu(player);
-                break;
-            case 8:
-                openTrollMenu(player);
-                break;
-            case 9:
-                import("./rank_system.js").then(mod => mod.openRankMenu(player)).catch(()=>{});
-                break;
-            case 10:
-                import("./teleport_system.js").then(mod => mod.openTeleportMenu(player)).catch(()=>{});
-                break;
-            case 11:
                 openInboxMenu(player);
                 break;
+        }
+    });
+}
+
+function openEconomyMenu(player) {
+    const form = new ActionFormData();
+    form.title("§e[ Pusat Ekonomi ]");
+    form.body(`${getUiHeader(player)}\n§7Kelola kekayaan dan perdagangan Anda.`);
+    form.button("§a§lKatalog Belanja\n§7Beli segala jenis kebutuhan", "textures/items/emerald");
+    form.button("§e§lPusat Penjualan\n§7Jual barang menjadi Rupiah", "textures/items/gold_ingot");
+    form.button("§2§lMesin Auto-Sell\n§7Investasi penghasilan otomatis", "textures/blocks/chest_front");
+    form.button("§b§lTransfer Dana & Barang\n§7Kirim ke pemain lain", "textures/items/paper");
+    form.button("§cKembali ke Beranda", "textures/ui/cancel");
+
+    form.show(player).then((response) => {
+        if (response.canceled) return;
+        switch (response.selection) {
+            case 0: openBuyMenu(player); break;
+            case 1: openSellChoiceMenu(player); break;
+            case 2: openAutoSellMenu(player); break;
+            case 3: openTransferChoiceMenu(player); break;
+            case 4: system.runTimeout(() => { openMainMenu(player); }, 5); break;
+        }
+    });
+}
+
+function openRpgGachaMenu(player) {
+    const form = new ActionFormData();
+    form.title("§d[ Petualangan & Kekuatan ]");
+    form.body(`${getUiHeader(player)}\n§7Tingkatkan kemampuan bertarung dan menambang.`);
+    form.button("§c§lProfil RPG & Leveling\n§7Lihat statistik XP", "textures/items/experience_bottle");
+    form.button("§6§lGacha & Sihir Core\n§7Panggil pasif dewa & sihir senjata", "textures/blocks/enchanting_table_top");
+    form.button("§cKembali ke Beranda", "textures/ui/cancel");
+
+    form.show(player).then((response) => {
+        if (response.canceled) return;
+        switch (response.selection) {
+            case 0: openRpgMenu(player); break;
+            case 1: openGachaMenu(player); break;
+            case 2: system.runTimeout(() => { openMainMenu(player); }, 5); break;
+        }
+    });
+}
+
+function openSocialMenu(player) {
+    const form = new ActionFormData();
+    form.title("§b[ Sosial & Utilitas ]");
+    form.body(`${getUiHeader(player)}\n§7Layanan komunitas dan navigasi dunia.`);
+    form.button("§6§lSistem Pangkat\n§7Tingkatkan kasta dan dapatkan diskon", "textures/items/nether_star");
+    form.button("§e§lTop Sultan\n§7Papan peringkat orang terkaya", "textures/items/diamond");
+    form.button("§c§lSistem Bounty\n§7Pasang harga buronan", "textures/items/iron_sword");
+    form.button("§3§lTeleportasi & Home\n§7Navigasi RTP dan Base", "textures/items/compass_item");
+    form.button("§4§lTroll Pemain\n§7Prank pemain lain (Berbayar)", "textures/blocks/tnt_side");
+    form.button("§cKembali ke Beranda", "textures/ui/cancel");
+
+    form.show(player).then((response) => {
+        if (response.canceled) return;
+        switch (response.selection) {
+            case 0: import("./rank_system.js").then(mod => mod.openRankMenu(player)).catch(()=>{}); break;
+            case 1: openTopKoinMenu(player); break;
+            case 2: openBountyMenu(player); break;
+            case 3: import("./teleport_system.js").then(mod => mod.openTeleportMenu(player)).catch(()=>{}); break;
+            case 4: openTrollMenu(player); break;
+            case 5: system.runTimeout(() => { openMainMenu(player); }, 5); break;
         }
     });
 }
@@ -1103,9 +1096,13 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
     // Check main hand tool
     const invComponent = player.getComponent("inventory");
     let heldItem = "";
+    let mainHandItemStack = null;
     if (invComponent && invComponent.container) {
         const item = invComponent.container.getItem(player.selectedSlotIndex);
-        if (item) heldItem = item.typeId;
+        if (item) {
+            heldItem = item.typeId;
+            mainHandItemStack = item;
+        }
     }
 
     if (isWood) {
@@ -1116,7 +1113,6 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
         if (rpgData.equippedSkills.includes("treecapitator") && heldItem.includes("axe") && !heldItem.includes("pickaxe")) {
             const broken = breakTreecapitator(player, block);
             if (broken > 0) {
-                player.sendMessage(`§a[Skill] §fTreecapitator aktif! Menebang §e${broken} balok kayu sekaligus§f.`);
                 addXp(player, "woodcutting", broken * 5);
             }
         }
@@ -1126,7 +1122,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
 
         // Active Skill: Ore Excavation (Tool Requirement: Pickaxe)
         if (rpgData.equippedSkills.includes("ore_excavation") && heldItem.includes("pickaxe")) {
-            const broken = breakBlockArea(player, block, 1);
+            const broken = breakBlockArea(player, block, 1, mainHandItemStack);
             if (broken > 0) {
                 // Don't spam message on 0 CD, just give XP
                 addXp(player, "mining", broken * 3);
@@ -1227,27 +1223,163 @@ function formatItemName(id) {
 
 function getIconPath(id) {
     const cleanName = id.replace("minecraft:", "");
+
+    // Explicit manual overrides for items that break the heuristic (shows purple/black missing texture in UI)
+    const iconOverrides = {
+        "slime": "textures/items/slimeball",
+        "piston": "textures/blocks/piston_top_normal",
+        "sticky_piston": "textures/blocks/piston_top_sticky",
+        "hopper": "textures/items/hopper",
+        "dispenser": "textures/blocks/dispenser_front_horizontal",
+        "dropper": "textures/blocks/dropper_front_horizontal",
+        "observer": "textures/blocks/observer_front",
+        "comparator": "textures/items/comparator",
+        "repeater": "textures/items/repeater",
+        "daylight_detector": "textures/blocks/daylight_detector_top",
+        "target": "textures/blocks/target_top",
+        "lightning_rod": "textures/blocks/lightning_rod",
+        "redstone_lamp": "textures/blocks/redstone_lamp_off",
+        "tripwire_hook": "textures/blocks/trip_wire_source",
+        "jukebox": "textures/blocks/jukebox_top",
+        "note_block": "textures/blocks/noteblock",
+        "shroomlight": "textures/blocks/shroomlight",
+        "end_rod": "textures/blocks/end_rod",
+        "campfire": "textures/items/campfire",
+        "soul_campfire": "textures/items/soul_campfire",
+        "bell": "textures/items/bell",
+        "barrel": "textures/blocks/barrel_side",
+        "composter": "textures/blocks/composter_side",
+        "loom": "textures/blocks/loom_front",
+        "stonecutter": "textures/blocks/stonecutter_side",
+        "grindstone": "textures/blocks/grindstone_side",
+        "smithing_table": "textures/blocks/smithing_table_front",
+        "cartography_table": "textures/blocks/cartography_table_side2",
+        "fletching_table": "textures/blocks/fletching_table_front",
+        "cauldron": "textures/items/cauldron",
+        "oak_sapling": "textures/blocks/sapling_oak",
+        "spruce_sapling": "textures/blocks/sapling_spruce",
+        "birch_sapling": "textures/blocks/sapling_birch",
+        "jungle_sapling": "textures/blocks/sapling_jungle",
+        "acacia_sapling": "textures/blocks/sapling_acacia",
+        "dark_oak_sapling": "textures/blocks/sapling_roofed_oak",
+        "wheat_seeds": "textures/items/seeds_wheat",
+        "pumpkin_seeds": "textures/items/seeds_pumpkin",
+        "melon_seeds": "textures/items/seeds_melon",
+        "beetroot_seeds": "textures/items/seeds_beetroot",
+        "sugar_cane": "textures/items/reeds",
+        "kelp": "textures/items/kelp",
+        "iron_ingot": "textures/items/iron_ingot",
+        "gold_ingot": "textures/items/gold_ingot",
+        "copper_ingot": "textures/items/copper_ingot",
+        "raw_iron": "textures/items/raw_iron",
+        "raw_gold": "textures/items/raw_gold",
+        "raw_copper": "textures/items/raw_copper"
+    };
+
+    if (iconOverrides[cleanName]) {
+        return iconOverrides[cleanName];
+    }
+
     // Simplistic heuristic for standard Bedrock vanilla paths
-    if (cleanName.includes("log") || cleanName.includes("dirt") || cleanName.includes("sand") || cleanName.includes("stone") || cleanName.includes("block") || cleanName.includes("obsidian") || cleanName.includes("glass") || cleanName.includes("basalt") || cleanName.includes("ice") || cleanName.includes("ore")) {
+    if (cleanName.includes("log") || cleanName.includes("dirt") || cleanName.includes("sand") || cleanName.includes("stone") || cleanName.includes("block") || cleanName.includes("obsidian") || cleanName.includes("glass") || cleanName.includes("basalt") || cleanName.includes("ice") || cleanName.includes("ore") || cleanName.includes("planks")) {
         return `textures/blocks/${cleanName}`;
     }
     return `textures/items/${cleanName}`;
 }
 
-function openBuyMenu(player, page = 0) {
-    const secondsLeft = Math.ceil((nextRefreshTime - Date.now()) / 1000);
-    const snapshot = [...currentShopItems]; // Ensure stable array length
+// Modern Shop Categories
+const SHOP_CATEGORIES = [
+    {
+        name: "Pertanian & Makanan",
+        icon: "textures/items/bread",
+        keywords: ["bread", "beef", "porkchop", "mutton", "chicken", "rabbit", "cod", "salmon", "apple", "carrot", "pie", "stew", "sapling", "propagule", "seeds", "potato", "wheat", "sugar_cane", "bamboo", "berries", "kelp", "cocoa", "cactus"]
+    },
+    {
+        name: "Blok Alam & Material",
+        icon: "textures/blocks/stone",
+        keywords: ["log", "cobblestone", "stone", "granite", "diorite", "andesite", "calcite", "tuff", "deepslate", "dirt", "sand", "gravel", "glass", "obsidian", "glowstone", "lantern", "prismarine", "bricks", "netherrack", "soul_", "magma", "basalt", "blackstone", "end_stone", "purpur"]
+    },
+    {
+        name: "Mineral & Ingot",
+        icon: "textures/items/diamond",
+        keywords: ["coal", "iron_ingot", "gold_ingot", "copper_ingot", "redstone", "lapis", "diamond", "emerald", "quartz", "amethyst", "raw_iron", "raw_gold", "raw_copper"]
+    },
+    {
+        name: "Redstone & Mekanik",
+        icon: "textures/items/redstone_dust",
+        keywords: ["slime", "piston", "hopper", "dispenser", "observer", "dropper", "comparator", "repeater", "detector", "target", "lightning_rod", "lamp", "tripwire"]
+    },
+    {
+        name: "Mob Drops & Loot",
+        icon: "textures/items/slimeball",
+        keywords: ["string", "leather", "feather", "flesh", "bone", "spider", "gunpowder", "magma_cream", "tear", "pearl", "blaze", "membrane", "shulker", "honey", "scute", "nautilus"]
+    },
+    {
+        name: "Peralatan & Dekorasi",
+        icon: "textures/items/bed_red",
+        keywords: ["torch", "chest", "anvil", "enchanting", "brewing", "bookshelf", "bed", "scaffolding", "jukebox", "note_block", "shroomlight", "end_rod", "campfire", "bell", "barrel", "composter", "loom", "stonecutter", "grindstone", "smithing", "cartography", "fletching", "cauldron", "arrow", "bow", "crossbow", "shield", "bottle", "name_tag", "saddle", "lead", "clock", "compass", "spyglass", "bucket"]
+    }
+];
 
-    const itemsPerPage = 10;
-    const totalPages = Math.ceil(snapshot.length / itemsPerPage);
+function openBuyMenu(player) {
+    const form = new ActionFormData();
+    form.title("§1[ Katalog Belanja Server ]");
+    form.body(`${getUiHeader(player)}\n§7Pilih kategori barang yang ingin Anda beli.`);
+
+    for (const cat of SHOP_CATEGORIES) {
+        form.button(`§l${cat.name}`, cat.icon);
+    }
+    form.button("§d§lBarang Langka [OP]\n§r§7Harga premium", "textures/items/nether_star");
+    form.button("§cKembali ke Menu Utama");
+
+    form.show(player).then(res => {
+        if (res.canceled) return;
+        if (res.selection < SHOP_CATEGORIES.length) {
+            openCategoryItemsMenu(player, SHOP_CATEGORIES[res.selection].name, SHOP_CATEGORIES[res.selection].keywords, false, 0);
+        } else if (res.selection === SHOP_CATEGORIES.length) {
+            // OP Items Tab (Special Case)
+            openCategoryItemsMenu(player, "Barang Langka [OP]", [], true, 0);
+        } else {
+            system.runTimeout(() => { openMainMenu(player); }, 5);
+        }
+    });
+}
+
+function openCategoryItemsMenu(player, categoryName, keywords, isOPCategory, page) {
+    let categoryItems = [];
+
+    if (isOPCategory) {
+        const opKeys = Object.keys(EconomyConfig.buyPoolOP);
+        for (const key of opKeys) {
+            categoryItems.push({ id: key, price: EconomyConfig.buyPoolOP[key], isOP: true });
+        }
+    } else {
+        const normalKeys = Object.keys(EconomyConfig.buyPoolNormal);
+        for (const key of normalKeys) {
+            // Check if key matches any of the category keywords
+            const isMatch = keywords.some(k => key.includes(k));
+            if (isMatch) {
+                // Ensure iron_block etc doesn't get swept into minerals unexpectedly unless targeted, but generic matching is fine for now
+                categoryItems.push({ id: key, price: EconomyConfig.buyPoolNormal[key], isOP: false });
+            }
+        }
+    }
+
+    if (categoryItems.length === 0) {
+        player.sendMessage("§c[Shop] Kategori ini sedang kosong.");
+        openBuyMenu(player);
+        return;
+    }
+
+    const itemsPerPage = 12; // Increased density for modern feel
+    const totalPages = Math.ceil(categoryItems.length / itemsPerPage);
     const startIdx = page * itemsPerPage;
-    const endIdx = Math.min(startIdx + itemsPerPage, snapshot.length);
-
-    const pageItems = snapshot.slice(startIdx, endIdx);
+    const endIdx = Math.min(startIdx + itemsPerPage, categoryItems.length);
+    const pageItems = categoryItems.slice(startIdx, endIdx);
 
     const form = new ActionFormData();
-    form.title(`§1[ Toko Dinamis | Halaman ${page + 1}/${totalPages} ]`);
-    form.body(`${getUiHeader(player)}\n§eSisa Waktu Refresh: §f${secondsLeft} detik\n§7Barang-barang ini akan berubah secara acak!`);
+    form.title(`§1[ ${categoryName} | Hal ${page + 1}/${totalPages} ]`);
+    form.body(`${getUiHeader(player)}`);
 
     for (const item of pageItems) {
         const displayName = formatItemName(item.id);
@@ -1264,8 +1396,7 @@ function openBuyMenu(player, page = 0) {
     // Pagination Controls
     if (page > 0) form.button("§e<- Halaman Sebelumnya");
     if (page < totalPages - 1) form.button("§eHalaman Selanjutnya ->");
-
-    form.button("§cKembali");
+    form.button("§cKembali ke Kategori");
 
     form.show(player).then((response) => {
         if (response.canceled) return;
@@ -1278,23 +1409,22 @@ function openBuyMenu(player, page = 0) {
             return;
         }
 
-        // Handle control buttons
         selection -= pageItems.length;
 
         if (page > 0 && selection === 0) {
-            openBuyMenu(player, page - 1);
+            openCategoryItemsMenu(player, categoryName, keywords, isOPCategory, page - 1);
             return;
         }
 
-        if (page > 0) selection -= 1; // offset if previous button existed
+        if (page > 0) selection -= 1;
 
         if (page < totalPages - 1 && selection === 0) {
-            openBuyMenu(player, page + 1);
+            openCategoryItemsMenu(player, categoryName, keywords, isOPCategory, page + 1);
             return;
         }
 
-        // Must be the "Kembali" button
-        system.runTimeout(() => { openMainMenu(player); }, 5);
+        // Back to Categories button
+        openBuyMenu(player);
     });
 }
 
@@ -1414,6 +1544,10 @@ world.afterEvents.entityHitEntity.subscribe((event) => {
     if (!attacker || attacker.typeId !== "minecraft:player") return;
     if (!target) return;
 
+    // Ensure target has health (is alive, not an armor stand, item frame, or minecart)
+    const targetHealth = target.getComponent("minecraft:health") || target.getComponent("health");
+    if (!targetHealth) return;
+
     // RPG Slayer Skill: Cleave Strike (Sweep Attack)
     const isMonster = !target.typeId.includes("player") && !target.typeId.includes("item");
     if (isMonster) {
@@ -1525,7 +1659,7 @@ function executeWeaponEffect(effect, attacker, target) {
     } else if (effect === "phantom_blade") {
         if (Math.random() < 0.10) {
             // Sweep attack approximation
-            target.dimension.runCommandAsync(`damage @e[x=${target.location.x},y=${target.location.y},z=${target.location.z},r=3,rm=0.1] 5 entity_attack entity "${attacker.id}"`);
+            target.dimension.runCommandAsync(`damage @e[x=${target.location.x},y=${target.location.y},z=${target.location.z},r=3,rm=0.1] 5 entity_attack entity "${attacker.name}"`);
             target.dimension.spawnParticle("minecraft:sweep_attack_emitter", target.location);
         }
     } else if (effect === "void_strike") {

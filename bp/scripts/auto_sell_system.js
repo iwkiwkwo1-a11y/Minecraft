@@ -1,6 +1,6 @@
 import { world, system, ItemStack, GameMode, ItemLockMode } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
-import { formatRupiah, getScore, setScore } from "./utils.js";
+import { formatRupiah, getScore, setScore, sendToInbox } from "./utils.js";
 import { EconomyConfig } from "./economy_config.js";
 
 const CHEST_PRICE = 1000000;
@@ -193,6 +193,8 @@ system.runInterval(() => {
     const db = getDb();
     if (db.length === 0) return;
 
+    const allPlayers = world.getAllPlayers();
+
     for (const chest of db) {
         try {
             const dim = world.getDimension(chest.dim);
@@ -237,9 +239,19 @@ system.runInterval(() => {
             }
 
             if (totalEarned > 0) {
-                // Add to owner via command to ensure it works even if offline
-                // The scoreboard is 'dompet'
-                dim.runCommandAsync(`scoreboard players add "${chest.owner}" dompet ${totalEarned}`).catch(()=>{});
+                // To avoid duplicate scoreboard entries in Top Sultan for offline players,
+                // we first check if the player is currently online.
+                const ownerPlayer = allPlayers.find(p => p.name === chest.owner);
+
+                if (ownerPlayer) {
+                    // Player is online, safely add to their dompet score directly
+                    const currentCoins = getScore(ownerPlayer, "dompet");
+                    setScore(ownerPlayer, "dompet", currentCoins + totalEarned);
+                } else {
+                    // Player is offline, send the earnings to their Inbox.
+                    // This prevents dummy string entries in the scoreboard that break the Top Sultan logic.
+                    sendToInbox(chest.owner, "Auto-Sell", totalEarned, "Penjualan dari mesin otomatis Anda.");
+                }
             }
         } catch(e) {
             // Chunk probably unloaded, ignore
