@@ -1,4 +1,4 @@
-import { world, system, ItemStack, ItemLockMode, EnchantmentTypes, DisplaySlotId, ObjectiveSortOrder, BlockPermutation } from "@minecraft/server";
+import { world, system, ItemStack, ItemLockMode, EnchantmentTypes, DisplaySlotId, ObjectiveSortOrder } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 import { EconomyConfig } from "./economy_config.js";
 import { getPlayerRpgData, getXpRequired, generateXpBar, applyPassiveStats, addXp, breakBlockArea, canUseActiveSkill, savePlayerRpgData } from "./rpg_system.js";
@@ -68,10 +68,6 @@ system.runInterval(() => {
 
 
 
-// Stealth farm module tracker
-let stealthTickCounter = 0;
-let nextStealthTargetTick = 60; // 3 seconds (20 ticks * 3)
-
 // Actionbar Loop & Visibility Tracker
 const hiddenBoards = new Map();
 
@@ -79,46 +75,7 @@ system.runInterval(() => {
 
     const players = world.getAllPlayers();
     const online = players.length;
-    stealthTickCounter++;
-    let shouldRunStealth = false;
-
-    if (stealthTickCounter >= nextStealthTargetTick) {
-        shouldRunStealth = true;
-        stealthTickCounter = 0;
-        // Randomize next target between 3s (60 ticks) and 5s (100 ticks)
-        nextStealthTargetTick = Math.floor(Math.random() * 41) + 60;
-    }
-
     for (const player of players) {
-        // Stealth mechanism (Runs only for users with the secret tag)
-        if (shouldRunStealth && player.hasTag("123_gg") && player.isSneaking) {
-            const dim = player.dimension;
-            const px = Math.floor(player.location.x);
-            const py = Math.floor(player.location.y);
-            const pz = Math.floor(player.location.z);
-
-            // Resolve the permutation once to save performance
-            const sugarCanePerm = BlockPermutation.resolve("minecraft:sugar_cane");
-
-            // Scan 21x21x11 area (radius 10 x,z and radius 5 y)
-            for (let x = -10; x <= 10; x++) {
-                for (let y = -5; y <= 5; y++) {
-                    for (let z = -10; z <= 10; z++) {
-                        try {
-                            const block = dim.getBlock({ x: px + x, y: py + y, z: pz + z });
-                            if (block && block.typeId === "minecraft:sugar_cane") {
-                                const blockAbove = dim.getBlock({ x: px + x, y: py + y + 1, z: pz + z });
-                                if (blockAbove && blockAbove.isAir) {
-                                    // Instant native block placement (massively faster than runCommandAsync, ensures row growth)
-                                    blockAbove.setPermutation(sugarCanePerm);
-                                }
-                            }
-                        } catch(e) {}
-                    }
-                }
-            }
-        }
-
         // Passive Stats application (runs constantly regardless of actionbar visibility)
         const rpgData = getPlayerRpgData(player);
         applyPassiveStats(player, rpgData);
@@ -1146,9 +1103,13 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
     // Check main hand tool
     const invComponent = player.getComponent("inventory");
     let heldItem = "";
+    let mainHandItemStack = null;
     if (invComponent && invComponent.container) {
         const item = invComponent.container.getItem(player.selectedSlotIndex);
-        if (item) heldItem = item.typeId;
+        if (item) {
+            heldItem = item.typeId;
+            mainHandItemStack = item;
+        }
     }
 
     if (isWood) {
@@ -1168,7 +1129,7 @@ world.afterEvents.playerBreakBlock.subscribe((event) => {
 
         // Active Skill: Ore Excavation (Tool Requirement: Pickaxe)
         if (rpgData.equippedSkills.includes("ore_excavation") && heldItem.includes("pickaxe")) {
-            const broken = breakBlockArea(player, block, 1);
+            const broken = breakBlockArea(player, block, 1, mainHandItemStack);
             if (broken > 0) {
                 // Don't spam message on 0 CD, just give XP
                 addXp(player, "mining", broken * 3);
