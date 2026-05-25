@@ -130,6 +130,14 @@ export const EconomyConfig = {
         "minecraft:blaze_rod": 20000,
         "minecraft:phantom_membrane": 10000,
         "minecraft:shulker_shell": 50000,
+        "minecraft:bone_block": 5000,
+        "minecraft:spider_web": 8000,
+        "minecraft:ender_eye": 25000,
+        "minecraft:honeycomb": 3000,
+        "minecraft:honey_block": 10000,
+        "minecraft:scute": 20000,
+        "minecraft:turtle_helmet": 75000,
+        "minecraft:nautilus_shell": 50000,
 
         // Misc & Petualangan
         "minecraft:arrow": 1000,

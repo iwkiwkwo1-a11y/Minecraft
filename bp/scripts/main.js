@@ -25,48 +25,27 @@ system.run(() => {
     }
 });
 
-// Shop Rotation State
+// Permanent Shop State
 let currentShopItems = [];
-let nextRefreshTime = Date.now() + 60000; // 1 minute from now
 
-function refreshShop() {
-    const normalKeys = Object.keys(EconomyConfig.buyPoolNormal);
-    const opKeys = Object.keys(EconomyConfig.buyPoolOP);
-
-    // Shuffle arrays
-    normalKeys.sort(() => 0.5 - Math.random());
-    opKeys.sort(() => 0.5 - Math.random());
-
+function loadPermanentShop() {
     currentShopItems = [];
 
-    // Pick 29 random normal items
-    const selectedNormals = normalKeys.slice(0, 29);
-    for (const key of selectedNormals) {
+    // Load all normal items
+    const normalKeys = Object.keys(EconomyConfig.buyPoolNormal);
+    for (const key of normalKeys) {
         currentShopItems.push({ id: key, price: EconomyConfig.buyPoolNormal[key], isOP: false });
     }
 
-    // Pick 1 random OP item
-    const selectedOP = opKeys[0];
-    currentShopItems.push({ id: selectedOP, price: EconomyConfig.buyPoolOP[selectedOP], isOP: true });
-
-    // Shuffle the final list so the OP item isn't always last
-    currentShopItems.sort(() => 0.5 - Math.random());
-
-    nextRefreshTime = Date.now() + 60000;
+    // Load all OP items
+    const opKeys = Object.keys(EconomyConfig.buyPoolOP);
+    for (const key of opKeys) {
+        currentShopItems.push({ id: key, price: EconomyConfig.buyPoolOP[key], isOP: true });
+    }
 }
 
 // Initial shop load
-refreshShop();
-
-// Shop Rotation Timer (Checks every 20 ticks)
-system.runInterval(() => {
-    if (Date.now() >= nextRefreshTime) {
-        refreshShop();
-        // world.sendMessage("§e[Shop] §fBarang jualan di Menu Beli telah diperbarui! Cek sekarang!");
-    }
-}, 20);
-
-
+loadPermanentShop();
 
 // Actionbar Loop & Visibility Tracker
 const hiddenBoards = new Map();
@@ -1295,8 +1274,10 @@ function getIconPath(id) {
 }
 
 function openBuyMenu(player, page = 0) {
-    const secondsLeft = Math.ceil((nextRefreshTime - Date.now()) / 1000);
-    const snapshot = [...currentShopItems]; // Ensure stable array length
+    // Reload shop items in case EconomyConfig was hot-reloaded
+    if (currentShopItems.length === 0) loadPermanentShop();
+
+    const snapshot = currentShopItems;
 
     const itemsPerPage = 10;
     const totalPages = Math.ceil(snapshot.length / itemsPerPage);
@@ -1306,8 +1287,8 @@ function openBuyMenu(player, page = 0) {
     const pageItems = snapshot.slice(startIdx, endIdx);
 
     const form = new ActionFormData();
-    form.title(`§1[ Toko Dinamis | Halaman ${page + 1}/${totalPages} ]`);
-    form.body(`${getUiHeader(player)}\n§eSisa Waktu Refresh: §f${secondsLeft} detik\n§7Barang-barang ini akan berubah secara acak!`);
+    form.title(`§1[ Toko Paten | Halaman ${page + 1}/${totalPages} ]`);
+    form.body(`${getUiHeader(player)}\n§7Pilih barang yang ingin Anda beli. Semua barang tersedia permanen!`);
 
     for (const item of pageItems) {
         const displayName = formatItemName(item.id);
