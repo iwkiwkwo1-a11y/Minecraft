@@ -217,7 +217,7 @@ function openGuideBook(player) {
     form.show(player);
 }
 
-// UI Logic - Main Menu
+// UI Logic - Main Menu (Modern Categorized)
 export function openMainMenu(player) {
     const rankBadge = getPlayerRank(player).badge;
     const score = getScore(player, "dompet");
@@ -225,66 +225,99 @@ export function openMainMenu(player) {
     const online = world.getAllPlayers().length;
 
     const form = new ActionFormData();
-    form.title("§1[ Server Menu Utama ]");
-    form.body(`${rankBadge}\n§e§lDOMPET: §f${formatRupiah(score)}\n§b§lCORE: §f${coreScore}\n§aOnline: ${online} Pemain`);
-    form.button("§e§lMenu Beli Barang\n§7Klik untuk beli kebutuhan", "textures/items/emerald");
-    form.button("§a§lMenu Jual Barang\n§7Pindah & Filter Rupiah", "textures/items/gold_ingot");
-    form.button("§2§lBeli Mesin Auto-Sell\n§7Otomatis Jual Hasil Farm", "textures/blocks/chest_front");
-    form.button("§b§lTransfer\n§7Kirim Rupiah/Barang", "textures/items/paper");
-    form.button("§c§lSistem Bounty\n§7Pasang buronan", "textures/items/iron_sword");
-    form.button("§6§lTop Sultan\n§7Peringkat pemain terkaya", "textures/items/diamond");
-    form.button("§d§lMenu RPG & Skill\n§7Level & Kemampuan Aktif", "textures/items/diamond_sword");
-    form.button("§5§lGacha & Core\n§7Sihir Senjata & Pasif Dewa", "textures/blocks/enchanting_table_top");
-    form.button("§4§lTroll Pemain\n§7Berikan kejutan ke pemain lain (Rp1 Juta)", "textures/blocks/tnt_side");
-    form.button("§6§lSistem Pangkat\n§7Tingkatkan Rank & Diskon", "textures/items/nether_star");
-    form.button("§3§lTeleportasi & Home\n§7Navigasi Cepat (RTP)", "textures/items/compass_item");
+    form.title("§1[ Pusat Server Pro ]");
+    form.body(`${rankBadge}\n§e§lDOMPET: §f${formatRupiah(score)}\n§b§lCORE: §f${coreScore}\n§aOnline: ${online} Pemain\n\n§7Pilih menu layanan di bawah ini:`);
+
+    form.button("§e§lPusat Ekonomi\n§7Beli, Jual, Transfer, Auto-Sell", "textures/items/emerald");
+    form.button("§d§lPetualangan & Kekuatan\n§7RPG, Skill, Gacha, Core", "textures/items/diamond_sword");
+    form.button("§b§lSosial & Utilitas\n§7Top Sultan, Bounty, Pangkat, Navigasi", "textures/ui/FriendsIcon");
 
     const unreadCount = getInbox(player.name).length;
     if (unreadCount > 0) {
-        form.button(`§e§lPesan Masuk (${unreadCount})\n§7Ambil kiriman Rupiah`, "textures/items/book_writable");
+        form.button(`§a§lKotak Masuk (${unreadCount})\n§7Ada pesan/paket baru!`, "textures/items/book_writable");
     } else {
-        form.button(`§7Pesan Masuk (0)\n§7Tidak ada pesan`, "textures/items/book_normal");
+        form.button(`§7Kotak Masuk (0)\n§7Tidak ada pesan`, "textures/items/book_normal");
     }
 
     form.show(player).then((response) => {
         if (response.canceled) return;
         switch (response.selection) {
             case 0:
-                openBuyMenu(player);
+                openEconomyMenu(player);
                 break;
             case 1:
-                openSellChoiceMenu(player);
+                openRpgGachaMenu(player);
                 break;
             case 2:
-                openAutoSellMenu(player);
+                openSocialMenu(player);
                 break;
             case 3:
-                openTransferChoiceMenu(player);
-                break;
-            case 4:
-                openBountyMenu(player);
-                break;
-            case 5:
-                openTopKoinMenu(player);
-                break;
-            case 6:
-                openRpgMenu(player);
-                break;
-            case 7:
-                openGachaMenu(player);
-                break;
-            case 8:
-                openTrollMenu(player);
-                break;
-            case 9:
-                import("./rank_system.js").then(mod => mod.openRankMenu(player)).catch(()=>{});
-                break;
-            case 10:
-                import("./teleport_system.js").then(mod => mod.openTeleportMenu(player)).catch(()=>{});
-                break;
-            case 11:
                 openInboxMenu(player);
                 break;
+        }
+    });
+}
+
+function openEconomyMenu(player) {
+    const form = new ActionFormData();
+    form.title("§e[ Pusat Ekonomi ]");
+    form.body(`${getUiHeader(player)}\n§7Kelola kekayaan dan perdagangan Anda.`);
+    form.button("§a§lKatalog Belanja\n§7Beli segala jenis kebutuhan", "textures/items/emerald");
+    form.button("§e§lPusat Penjualan\n§7Jual barang menjadi Rupiah", "textures/items/gold_ingot");
+    form.button("§2§lMesin Auto-Sell\n§7Investasi penghasilan otomatis", "textures/blocks/chest_front");
+    form.button("§b§lTransfer Dana & Barang\n§7Kirim ke pemain lain", "textures/items/paper");
+    form.button("§cKembali ke Beranda", "textures/ui/cancel");
+
+    form.show(player).then((response) => {
+        if (response.canceled) return;
+        switch (response.selection) {
+            case 0: openBuyMenu(player); break;
+            case 1: openSellChoiceMenu(player); break;
+            case 2: openAutoSellMenu(player); break;
+            case 3: openTransferChoiceMenu(player); break;
+            case 4: system.runTimeout(() => { openMainMenu(player); }, 5); break;
+        }
+    });
+}
+
+function openRpgGachaMenu(player) {
+    const form = new ActionFormData();
+    form.title("§d[ Petualangan & Kekuatan ]");
+    form.body(`${getUiHeader(player)}\n§7Tingkatkan kemampuan bertarung dan menambang.`);
+    form.button("§c§lProfil RPG & Leveling\n§7Lihat statistik XP", "textures/items/experience_bottle");
+    form.button("§6§lGacha & Sihir Core\n§7Panggil pasif dewa & sihir senjata", "textures/blocks/enchanting_table_top");
+    form.button("§cKembali ke Beranda", "textures/ui/cancel");
+
+    form.show(player).then((response) => {
+        if (response.canceled) return;
+        switch (response.selection) {
+            case 0: openRpgMenu(player); break;
+            case 1: openGachaMenu(player); break;
+            case 2: system.runTimeout(() => { openMainMenu(player); }, 5); break;
+        }
+    });
+}
+
+function openSocialMenu(player) {
+    const form = new ActionFormData();
+    form.title("§b[ Sosial & Utilitas ]");
+    form.body(`${getUiHeader(player)}\n§7Layanan komunitas dan navigasi dunia.`);
+    form.button("§6§lSistem Pangkat\n§7Tingkatkan kasta dan dapatkan diskon", "textures/items/nether_star");
+    form.button("§e§lTop Sultan\n§7Papan peringkat orang terkaya", "textures/items/diamond");
+    form.button("§c§lSistem Bounty\n§7Pasang harga buronan", "textures/items/iron_sword");
+    form.button("§3§lTeleportasi & Home\n§7Navigasi RTP dan Base", "textures/items/compass_item");
+    form.button("§4§lTroll Pemain\n§7Prank pemain lain (Berbayar)", "textures/blocks/tnt_side");
+    form.button("§cKembali ke Beranda", "textures/ui/cancel");
+
+    form.show(player).then((response) => {
+        if (response.canceled) return;
+        switch (response.selection) {
+            case 0: import("./rank_system.js").then(mod => mod.openRankMenu(player)).catch(()=>{}); break;
+            case 1: openTopKoinMenu(player); break;
+            case 2: openBountyMenu(player); break;
+            case 3: import("./teleport_system.js").then(mod => mod.openTeleportMenu(player)).catch(()=>{}); break;
+            case 4: openTrollMenu(player); break;
+            case 5: system.runTimeout(() => { openMainMenu(player); }, 5); break;
         }
     });
 }
