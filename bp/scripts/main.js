@@ -28,25 +28,6 @@ system.run(() => {
 // Permanent Shop State
 let currentShopItems = [];
 
-function loadPermanentShop() {
-    currentShopItems = [];
-
-    // Load all normal items
-    const normalKeys = Object.keys(EconomyConfig.buyPoolNormal);
-    for (const key of normalKeys) {
-        currentShopItems.push({ id: key, price: EconomyConfig.buyPoolNormal[key], isOP: false });
-    }
-
-    // Load all OP items
-    const opKeys = Object.keys(EconomyConfig.buyPoolOP);
-    for (const key of opKeys) {
-        currentShopItems.push({ id: key, price: EconomyConfig.buyPoolOP[key], isOP: true });
-    }
-}
-
-// Initial shop load
-loadPermanentShop();
-
 // Actionbar Loop & Visibility Tracker
 const hiddenBoards = new Map();
 
@@ -1273,22 +1254,99 @@ function getIconPath(id) {
     return `textures/items/${cleanName}`;
 }
 
-function openBuyMenu(player, page = 0) {
-    // Reload shop items in case EconomyConfig was hot-reloaded
-    if (currentShopItems.length === 0) loadPermanentShop();
+// Modern Shop Categories
+const SHOP_CATEGORIES = [
+    {
+        name: "Pertanian & Makanan",
+        icon: "textures/items/bread",
+        keywords: ["bread", "beef", "porkchop", "mutton", "chicken", "rabbit", "cod", "salmon", "apple", "carrot", "pie", "stew", "sapling", "propagule", "seeds", "potato", "wheat", "sugar_cane", "bamboo", "berries", "kelp", "cocoa", "cactus"]
+    },
+    {
+        name: "Blok Alam & Material",
+        icon: "textures/blocks/stone",
+        keywords: ["log", "cobblestone", "stone", "granite", "diorite", "andesite", "calcite", "tuff", "deepslate", "dirt", "sand", "gravel", "glass", "obsidian", "glowstone", "lantern", "prismarine", "bricks", "netherrack", "soul_", "magma", "basalt", "blackstone", "end_stone", "purpur"]
+    },
+    {
+        name: "Mineral & Ingot",
+        icon: "textures/items/diamond",
+        keywords: ["coal", "iron_ingot", "gold_ingot", "copper_ingot", "redstone", "lapis", "diamond", "emerald", "quartz", "amethyst", "raw_iron", "raw_gold", "raw_copper"]
+    },
+    {
+        name: "Redstone & Mekanik",
+        icon: "textures/items/redstone_dust",
+        keywords: ["slime", "piston", "hopper", "dispenser", "observer", "dropper", "comparator", "repeater", "detector", "target", "lightning_rod", "lamp", "tripwire"]
+    },
+    {
+        name: "Mob Drops & Loot",
+        icon: "textures/items/slimeball",
+        keywords: ["string", "leather", "feather", "flesh", "bone", "spider", "gunpowder", "magma_cream", "tear", "pearl", "blaze", "membrane", "shulker", "honey", "scute", "nautilus"]
+    },
+    {
+        name: "Peralatan & Dekorasi",
+        icon: "textures/items/bed_red",
+        keywords: ["torch", "chest", "anvil", "enchanting", "brewing", "bookshelf", "bed", "scaffolding", "jukebox", "note_block", "shroomlight", "end_rod", "campfire", "bell", "barrel", "composter", "loom", "stonecutter", "grindstone", "smithing", "cartography", "fletching", "cauldron", "arrow", "bow", "crossbow", "shield", "bottle", "name_tag", "saddle", "lead", "clock", "compass", "spyglass", "bucket"]
+    }
+];
 
-    const snapshot = currentShopItems;
+function openBuyMenu(player) {
+    const form = new ActionFormData();
+    form.title("§1[ Katalog Belanja Server ]");
+    form.body(`${getUiHeader(player)}\n§7Pilih kategori barang yang ingin Anda beli.`);
 
-    const itemsPerPage = 10;
-    const totalPages = Math.ceil(snapshot.length / itemsPerPage);
+    for (const cat of SHOP_CATEGORIES) {
+        form.button(`§l${cat.name}`, cat.icon);
+    }
+    form.button("§d§lBarang Langka [OP]\n§r§7Harga premium", "textures/items/nether_star");
+    form.button("§cKembali ke Menu Utama");
+
+    form.show(player).then(res => {
+        if (res.canceled) return;
+        if (res.selection < SHOP_CATEGORIES.length) {
+            openCategoryItemsMenu(player, SHOP_CATEGORIES[res.selection].name, SHOP_CATEGORIES[res.selection].keywords, false, 0);
+        } else if (res.selection === SHOP_CATEGORIES.length) {
+            // OP Items Tab (Special Case)
+            openCategoryItemsMenu(player, "Barang Langka [OP]", [], true, 0);
+        } else {
+            system.runTimeout(() => { openMainMenu(player); }, 5);
+        }
+    });
+}
+
+function openCategoryItemsMenu(player, categoryName, keywords, isOPCategory, page) {
+    let categoryItems = [];
+
+    if (isOPCategory) {
+        const opKeys = Object.keys(EconomyConfig.buyPoolOP);
+        for (const key of opKeys) {
+            categoryItems.push({ id: key, price: EconomyConfig.buyPoolOP[key], isOP: true });
+        }
+    } else {
+        const normalKeys = Object.keys(EconomyConfig.buyPoolNormal);
+        for (const key of normalKeys) {
+            // Check if key matches any of the category keywords
+            const isMatch = keywords.some(k => key.includes(k));
+            if (isMatch) {
+                // Ensure iron_block etc doesn't get swept into minerals unexpectedly unless targeted, but generic matching is fine for now
+                categoryItems.push({ id: key, price: EconomyConfig.buyPoolNormal[key], isOP: false });
+            }
+        }
+    }
+
+    if (categoryItems.length === 0) {
+        player.sendMessage("§c[Shop] Kategori ini sedang kosong.");
+        openBuyMenu(player);
+        return;
+    }
+
+    const itemsPerPage = 12; // Increased density for modern feel
+    const totalPages = Math.ceil(categoryItems.length / itemsPerPage);
     const startIdx = page * itemsPerPage;
-    const endIdx = Math.min(startIdx + itemsPerPage, snapshot.length);
-
-    const pageItems = snapshot.slice(startIdx, endIdx);
+    const endIdx = Math.min(startIdx + itemsPerPage, categoryItems.length);
+    const pageItems = categoryItems.slice(startIdx, endIdx);
 
     const form = new ActionFormData();
-    form.title(`§1[ Toko Paten | Halaman ${page + 1}/${totalPages} ]`);
-    form.body(`${getUiHeader(player)}\n§7Pilih barang yang ingin Anda beli. Semua barang tersedia permanen!`);
+    form.title(`§1[ ${categoryName} | Hal ${page + 1}/${totalPages} ]`);
+    form.body(`${getUiHeader(player)}`);
 
     for (const item of pageItems) {
         const displayName = formatItemName(item.id);
@@ -1305,8 +1363,7 @@ function openBuyMenu(player, page = 0) {
     // Pagination Controls
     if (page > 0) form.button("§e<- Halaman Sebelumnya");
     if (page < totalPages - 1) form.button("§eHalaman Selanjutnya ->");
-
-    form.button("§cKembali");
+    form.button("§cKembali ke Kategori");
 
     form.show(player).then((response) => {
         if (response.canceled) return;
@@ -1319,23 +1376,22 @@ function openBuyMenu(player, page = 0) {
             return;
         }
 
-        // Handle control buttons
         selection -= pageItems.length;
 
         if (page > 0 && selection === 0) {
-            openBuyMenu(player, page - 1);
+            openCategoryItemsMenu(player, categoryName, keywords, isOPCategory, page - 1);
             return;
         }
 
-        if (page > 0) selection -= 1; // offset if previous button existed
+        if (page > 0) selection -= 1;
 
         if (page < totalPages - 1 && selection === 0) {
-            openBuyMenu(player, page + 1);
+            openCategoryItemsMenu(player, categoryName, keywords, isOPCategory, page + 1);
             return;
         }
 
-        // Must be the "Kembali" button
-        system.runTimeout(() => { openMainMenu(player); }, 5);
+        // Back to Categories button
+        openBuyMenu(player);
     });
 }
 
