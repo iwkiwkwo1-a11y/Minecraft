@@ -192,6 +192,72 @@ function grantMenuClock(player) {
     }
 }
 
+// Handle Spawn Egg Usage (Stealth Spawn for Shop Animals)
+world.beforeEvents.itemUseOn.subscribe((event) => {
+    const { itemStack, source, block, blockFace } = event;
+    if (!itemStack || !itemStack.typeId.includes("spawn_egg")) return;
+
+    // We only process if it's a player holding it
+    if (!source || source.typeId !== "minecraft:player") return;
+
+    // Determine spawn location based on clicked face
+    let spawnX = block.x;
+    let spawnY = block.y;
+    let spawnZ = block.z;
+
+    if (blockFace === "Up") spawnY++;
+    else if (blockFace === "Down") spawnY--;
+    else if (blockFace === "North") spawnZ--;
+    else if (blockFace === "South") spawnZ++;
+    else if (blockFace === "West") spawnX--;
+    else if (blockFace === "East") spawnX++;
+
+    // Center the spawn coordinates
+    const location = { x: spawnX + 0.5, y: spawnY, z: spawnZ + 0.5 };
+    const entityId = itemStack.typeId.replace("_spawn_egg", "");
+
+    event.cancel = true; // Prevent vanilla breeding/spawning mechanics
+
+    system.run(() => {
+        // Safely decrement item from hand
+        const eq = source.getComponent("equippable");
+        if (eq) {
+            const mainhand = eq.getEquipment("Mainhand");
+            if (mainhand && mainhand.typeId === itemStack.typeId) {
+                if (mainhand.amount > 1) {
+                    mainhand.amount--;
+                    eq.setEquipment("Mainhand", mainhand);
+                } else {
+                    eq.setEquipment("Mainhand", undefined);
+                }
+            }
+        }
+
+        try {
+            // Spawn the entity manually and tag it as sterile
+            const spawnedEntity = source.dimension.spawnEntity(entityId, location);
+            if (spawnedEntity) {
+                spawnedEntity.addTag("steril");
+                source.sendMessage(`§a[System] Men-spawn ${formatItemName(entityId)}. §c(Makhluk ini bersifat steril/mandul)`);
+            }
+        } catch (e) {
+            source.sendMessage("§c[System] Gagal men-spawn makhluk tersebut di lokasi ini.");
+        }
+    });
+});
+
+// Block interaction (breeding/feeding) for sterile animals
+world.beforeEvents.playerInteractWithEntity.subscribe((event) => {
+    const { target, player } = event;
+    if (target && target.hasTag("steril")) {
+        event.cancel = true;
+        system.run(() => {
+            player.sendMessage("§c[Sistem] Makhluk ini didapatkan dari Shop dan bersifat steril. Anda tidak bisa memberinya makan atau mengembangkannya.");
+            player.dimension.runCommandAsync(`playsound note.bass @a[x=${player.location.x},y=${player.location.y},z=${player.location.z},r=5]`);
+        });
+    }
+});
+
 // Open Menu / Guidebook on Item Use
 world.beforeEvents.itemUse.subscribe((event) => {
     const { itemStack, source } = event;
@@ -1318,6 +1384,11 @@ const SHOP_CATEGORIES = [
         name: "Peralatan & Dekorasi",
         icon: "textures/items/bed_red",
         keywords: ["torch", "chest", "anvil", "enchanting", "brewing", "bookshelf", "bed", "scaffolding", "jukebox", "note_block", "shroomlight", "end_rod", "campfire", "bell", "barrel", "composter", "loom", "stonecutter", "grindstone", "smithing", "cartography", "fletching", "cauldron", "arrow", "bow", "crossbow", "shield", "bottle", "name_tag", "saddle", "lead", "clock", "compass", "spyglass", "bucket"]
+    },
+    {
+        name: "Bibit & Makhluk",
+        icon: "textures/items/egg",
+        keywords: ["spawn_egg"]
     }
 ];
 

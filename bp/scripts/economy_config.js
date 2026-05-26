@@ -139,6 +139,20 @@ export const EconomyConfig = {
         "minecraft:turtle_helmet": 75000,
         "minecraft:nautilus_shell": 50000,
 
+        // Bibit & Makhluk (Steril)
+        "minecraft:cow_spawn_egg": 50000,
+        "minecraft:pig_spawn_egg": 40000,
+        "minecraft:sheep_spawn_egg": 45000,
+        "minecraft:chicken_spawn_egg": 30000,
+        "minecraft:horse_spawn_egg": 80000,
+        "minecraft:villager_spawn_egg": 150000,
+        "minecraft:zombie_spawn_egg": 25000,
+        "minecraft:skeleton_spawn_egg": 30000,
+        "minecraft:creeper_spawn_egg": 50000,
+        "minecraft:slime_spawn_egg": 60000,
+        "minecraft:spider_spawn_egg": 30000,
+        "minecraft:enderman_spawn_egg": 75000,
+
         // Misc & Petualangan
         "minecraft:arrow": 1000,
         "minecraft:bow": 5000,
