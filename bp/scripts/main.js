@@ -292,11 +292,11 @@ export function openMainMenu(player) {
 
     const form = new ActionFormData();
     form.title("§1[ Pusat Server Pro ]");
-    form.body(`${rankBadge}\n§e§lDOMPET: §f${formatRupiah(score)}\n§b§lCORE: §f${coreScore}\n§aOnline: ${online} Pemain\n\n§7Pilih menu layanan di bawah ini:`);
+    form.body(`${rankBadge}\n§e§lKAS: §f${formatRupiah(score)}\n§b§lINTI: §f${coreScore}\n§aOnline: ${online} Pemain\n\n§7Pilih menu layanan di bawah ini:`);
 
-    form.button("§e§lPusat Ekonomi\n§7Beli, Jual, Transfer, Auto-Sell", "textures/items/emerald");
-    form.button("§d§lPetualangan & Kekuatan\n§7RPG, Skill, Gacha, Core", "textures/items/diamond_sword");
-    form.button("§b§lSosial & Utilitas\n§7Top Sultan, Bounty, Pangkat, Navigasi", "textures/ui/FriendsIcon");
+    form.button("§e§lSektor Ekonomi\n§7Perdagangan, Ekspor, Distribusi", "textures/items/emerald");
+    form.button("§d§lAtribut & Kekuatan\n§7Peningkatan Diri & Berkat Kuno", "textures/items/diamond_sword");
+    form.button("§b§lSosial & Komunitas\n§7Hierarki, Navigasi, & Sabotase", "textures/ui/FriendsIcon");
 
     const unreadCount = getInbox(player.name).length;
     if (unreadCount > 0) {
@@ -326,12 +326,12 @@ export function openMainMenu(player) {
 
 function openEconomyMenu(player) {
     const form = new ActionFormData();
-    form.title("§e[ Pusat Ekonomi ]");
-    form.body(`${getUiHeader(player)}\n§7Kelola kekayaan dan perdagangan Anda.`);
-    form.button("§a§lKatalog Belanja\n§7Beli segala jenis kebutuhan", "textures/items/emerald");
-    form.button("§e§lPusat Penjualan\n§7Jual barang menjadi Rupiah", "textures/items/gold_ingot");
-    form.button("§2§lMesin Auto-Sell\n§7Investasi penghasilan otomatis", "textures/blocks/chest_front");
-    form.button("§b§lTransfer Dana & Barang\n§7Kirim ke pemain lain", "textures/items/paper");
+    form.title("§e[ Sektor Ekonomi ]");
+    form.body(`${getUiHeader(player)}\n§7Kelola kekayaan dan jalur perdagangan Anda.`);
+    form.button("§a§lKatalog Perdagangan\n§7Dapatkan berbagai kebutuhan hidup", "textures/items/emerald");
+    form.button("§e§lPusat Pengepul\n§7Tukarkan hasil alam menjadi Rupiah", "textures/items/gold_ingot");
+    form.button("§2§lSistem Ekspor Otomatis\n§7Otomatisasi pendapatan komoditas", "textures/blocks/chest_front");
+    form.button("§b§lDistribusi Aset\n§7Kirim dana & barang antar entitas", "textures/items/paper");
     form.button("§cKembali ke Beranda", "textures/ui/cancel");
 
     form.show(player).then((response) => {
@@ -348,10 +348,10 @@ function openEconomyMenu(player) {
 
 function openRpgGachaMenu(player) {
     const form = new ActionFormData();
-    form.title("§d[ Petualangan & Kekuatan ]");
-    form.body(`${getUiHeader(player)}\n§7Tingkatkan kemampuan bertarung dan menambang.`);
-    form.button("§c§lProfil RPG & Leveling\n§7Lihat statistik XP", "textures/items/experience_bottle");
-    form.button("§6§lGacha & Sihir Core\n§7Panggil pasif dewa & sihir senjata", "textures/blocks/enchanting_table_top");
+    form.title("§d[ Atribut & Kekuatan ]");
+    form.body(`${getUiHeader(player)}\n§7Asah kemampuan fisik dan resap energi mistis.`);
+    form.button("§c§lCatatan Pengalaman (RPG)\n§7Tinjau kemajuan dan manajemen keahlian", "textures/items/experience_bottle");
+    form.button("§6§lAltar Penempaan Inti\n§7Bangkitkan Sihir Artefak & Berkat Kuno", "textures/blocks/enchanting_table_top");
     form.button("§cKembali ke Beranda", "textures/ui/cancel");
 
     form.show(player).then((response) => {
@@ -366,13 +366,13 @@ function openRpgGachaMenu(player) {
 
 function openSocialMenu(player) {
     const form = new ActionFormData();
-    form.title("§b[ Sosial & Utilitas ]");
-    form.body(`${getUiHeader(player)}\n§7Layanan komunitas dan navigasi dunia.`);
-    form.button("§6§lSistem Pangkat\n§7Tingkatkan kasta dan dapatkan diskon", "textures/items/nether_star");
-    form.button("§e§lTop Sultan\n§7Papan peringkat orang terkaya", "textures/items/diamond");
-    form.button("§c§lSistem Bounty\n§7Pasang harga buronan", "textures/items/iron_sword");
-    form.button("§3§lTeleportasi & Home\n§7Navigasi RTP dan Base", "textures/items/compass_item");
-    form.button("§4§lTroll Pemain\n§7Prank pemain lain (Berbayar)", "textures/blocks/tnt_side");
+    form.title("§b[ Sosial & Komunitas ]");
+    form.body(`${getUiHeader(player)}\n§7Pusat layanan interaksi dan navigasi global.`);
+    form.button("§6§lHierarki Kasta\n§7Tingkatkan gelar & raih previlese ekonomi", "textures/items/nether_star");
+    form.button("§e§lPapan Peringkat Konglomerat\n§7Daftar entitas terkaya di dunia", "textures/items/diamond");
+    form.button("§c§lSistem Buronan\n§7Sayembara pemburuan entitas", "textures/items/iron_sword");
+    form.button("§3§lNavigasi Spasial\n§7Teleportasi Ruang & Simpan Titik Aman", "textures/items/compass_item");
+    form.button("§4§lSistem Sabotase\n§7Kirim kutukan anonim pada target", "textures/blocks/tnt_side");
     form.button("§cKembali ke Beranda", "textures/ui/cancel");
 
     form.show(player).then((response) => {
@@ -497,10 +497,10 @@ function openRpgMenu(player) {
         }
     }
 
-    statsStr += `\n§dPasif Gacha (Max 3): \n`;
+    statsStr += `\n§dBerkat Kuno Aktif (Maks 3): \n`;
     const eqPassives = rpgData.equippedGachaPassives || [];
     if (eqPassives.length === 0) {
-        statsStr += "§7- Belum ada pasif dewa yang di-equip\n";
+        statsStr += "§7- Belum ada berkat yang terpasang\n";
     } else {
         for (const passive of eqPassives) {
             statsStr += `§d- ${passive.toUpperCase()}\n`;
@@ -509,10 +509,10 @@ function openRpgMenu(player) {
 
     form.body(statsStr);
 
-    form.button("§9Panduan Bermain RPG\n§7Cara menaikkan level & mendapat skill", "textures/items/book_writable");
-    form.button("§eSkill Tree (Beli Skill)\n§7Tukar SP dengan Skill Baru", "textures/items/experience_bottle");
-    form.button("§aKelola Semua Skill\n§7Pasang Skill & Pasif Dewamu", "textures/items/nether_star");
-    form.button("§cKembali ke Menu Utama", "textures/ui/cancel");
+    form.button("§9Buku Panduan Atribut\n§7Pusat informasi leveling & keahlian", "textures/items/book_writable");
+    form.button("§ePohon Keahlian\n§7Buka potensi menggunakan poin", "textures/items/experience_bottle");
+    form.button("§aManajemen Kemampuan\n§7Atur susunan skill & berkat kuno", "textures/items/nether_star");
+    form.button("§cKembali ke Sektor Utama", "textures/ui/cancel");
 
     form.show(player).then((res) => {
         if (res.canceled) return;
@@ -527,9 +527,9 @@ function openRpgMenu(player) {
 
 function openRpgGuideMenu(player) {
     const form = new ActionFormData();
-    form.title("§9[ Panduan Bermain RPG ]");
-    form.body("§e§l1. Cara Mendapatkan Level (XP)§r\nKamu mendapatkan XP dengan melakukan pekerjaan sesuai *Job*:\n- §bMining§f: Menambang batu atau ore di goa.\n- §aWoodcutting§f: Menebang pohon.\n- §cSlayer§f: Membunuh monster (Zombie, Skeleton, dll).\n\n§e§l2. Mendapatkan Skill Point (SP)§r\nSetiap kali *Job* kamu naik level, kamu akan mendapatkan 1 SP secara otomatis. Kamu bisa melihat jumlah SP kamu di Menu RPG utama.\n\n§e§l3. Menggunakan Skill Point (SP)§r\nMasuk ke menu §eSkill Tree (Beli Skill)§f. Di sana kamu bisa menukarkan SP dengan kemampuan khusus.\n\n§e§l4. Memasang Skill (Penting!)§r\nSetelah membeli skill, skill tersebut **BELUM AKTIF**. Kamu harus masuk ke menu §aKelola Semua Skill§f dan menceklis skill yang ingin dipakai. Kamu hanya bisa memakai **Maksimal 2 Skill Aktif** secara bersamaan. Pastikan untuk mencopot skill memecah batu saat membangun rumah agar bangunanmu tidak hancur berantakan!");
-    form.button("§cKembali ke Menu RPG");
+    form.title("§9[ Pedoman Kekuatan ]");
+    form.body("§e§l1. Cara Mendapatkan Level (XP)§r\nKamu mendapatkan XP dengan melakukan pekerjaan sesuai *Spesialisasi*:\n- §bMining§f: Menambang batu atau ore di goa.\n- §aWoodcutting§f: Menebang pohon.\n- §cSlayer§f: Membunuh entitas jahat (Zombie, Skeleton, dll).\n\n§e§l2. Mendapatkan Skill Point (SP)§r\nSetiap kali tingkat spesialisasi naik, kamu otomatis mendapatkan 1 SP. Jumlah SP dapat dilihat di Profil Atribut.\n\n§e§l3. Menggunakan Skill Point (SP)§r\nBuka menu §ePohon Keahlian§f untuk mempelajari teknik-teknik baru.\n\n§e§l4. Memasang Kemampuan (Kritis!)§r\nTeknik yang dipelajari **TIDAK OTOMATIS AKTIF**. Kamu harus masuk ke menu §aManajemen Kemampuan§f untuk menerapkannya. Maksimal **2 Teknik Aktif** dapat digunakan bersamaan. Selalu waspada saat menggunakan teknik area (seperti Ore Excavation) di dekat bangunan!");
+    form.button("§cKembali ke Menu Atribut");
     form.show(player).then(() => {
         openRpgMenu(player);
     });
@@ -544,14 +544,14 @@ const AVAILABLE_SKILLS = [
 function openSkillTreeMenu(player) {
     const rpgData = getPlayerRpgData(player);
     const form = new ActionFormData();
-    form.title("§e[ Beli Skill ]");
-    form.body(`Sisa Skill Point (SP): §e${rpgData.sp}\n\nPilih skill yang ingin kamu pelajari:`);
+    form.title("§e[ Pohon Keahlian ]");
+    form.body(`Sisa Poin Keahlian (SP): §e${rpgData.sp}\n\nPilih teknik yang ingin kamu pelajari:`);
 
     for (const skill of AVAILABLE_SKILLS) {
         if (rpgData.unlockedSkills.includes(skill.id)) {
-            form.button(`§a${skill.name}\n§7[Sudah Dimiliki]`);
+            form.button(`§a${skill.name}\n§7[Telah Dikuasai]`);
         } else {
-            form.button(`§c${skill.name}\n§7[Harga: ${skill.cost} SP]`);
+            form.button(`§c${skill.name}\n§7[Biaya: ${skill.cost} SP]`);
         }
     }
     form.button("§cKembali");
@@ -591,25 +591,25 @@ function openEquipUnifiedMenu(player) {
     const unlockedPassives = rpgData.unlockedGachaPassives || [];
 
     if (unlockedActives.length === 0 && unlockedPassives.length === 0) {
-        player.sendMessage("§c[RPG] Kamu belum memiliki Skill Aktif (dari Level) maupun Pasif Dewa (dari Gacha)!");
+        player.sendMessage("§c[Sistem] Anda belum menguasai teknik apapun maupun mendapatkan Berkat Kuno!");
         return;
     }
 
     const form = new ModalFormData();
-    form.title("§a[ Kelola Skill & Pasif ]");
+    form.title("§a[ Manajemen Kemampuan ]");
 
     // 1. Add toggles for Active Skills
     for (const skillId of unlockedActives) {
         const skillInfo = AVAILABLE_SKILLS.find(s => s.id === skillId);
         const isEquipped = rpgData.equippedSkills.includes(skillId);
-        form.toggle(`§b(Aktif) §r${skillInfo ? skillInfo.name : skillId}`, isEquipped);
+        form.toggle(`§b(Teknik) §r${skillInfo ? skillInfo.name : skillId}`, isEquipped);
     }
 
     // 2. Add toggles for Gacha Passives
     for (const passiveId of unlockedPassives) {
         const passiveInfo = PASSIVE_POOL.find(p => p.id === passiveId);
         const isEquipped = (rpgData.equippedGachaPassives || []).includes(passiveId);
-        form.toggle(`§d(Pasif) §r${passiveInfo ? passiveInfo.name : passiveId}`, isEquipped);
+        form.toggle(`§d(Berkat) §r${passiveInfo ? passiveInfo.name : passiveId}`, isEquipped);
     }
 
     form.show(player).then((res) => {
@@ -639,12 +639,12 @@ function openEquipUnifiedMenu(player) {
         let hasError = false;
 
         if (newActiveEquipped.length > 2) {
-            player.sendMessage("§c[RPG] Kamu melebihi batas! Maksimal 2 Skill Aktif.");
+            player.sendMessage("§c[Sistem] Kapasitas berlebih! Anda hanya dapat menggunakan maksimal 2 Teknik secara bersamaan.");
             hasError = true;
         }
 
         if (newPassiveEquipped.length > 3) {
-            player.sendMessage("§c[RPG] Kamu melebihi batas! Maksimal 3 Pasif Dewa.");
+            player.sendMessage("§c[Sistem] Kapasitas berlebih! Anda hanya dapat menyerap maksimal 3 Berkat Kuno.");
             hasError = true;
         }
 
@@ -652,7 +652,7 @@ function openEquipUnifiedMenu(player) {
             rpgData.equippedSkills = newActiveEquipped;
             rpgData.equippedGachaPassives = newPassiveEquipped;
             savePlayerRpgData(player, rpgData);
-            player.sendMessage("§a[RPG] Susunan Skill & Pasif Dewa berhasil diperbarui!");
+            player.sendMessage("§a[Sistem] Susunan kemampuan & berkat berhasil diterapkan.");
         }
     });
 }
@@ -1248,7 +1248,7 @@ world.afterEvents.entityDie.subscribe((event) => {
 function openTopKoinMenu(player) {
     const obj = world.scoreboard.getObjective("dompet");
     if (!obj) {
-        player.sendMessage("§c[System] Scoreboard belum siap.");
+        player.sendMessage("§c[Sistem] Lembar catatan belum tersedia.");
         return;
     }
 
@@ -1258,9 +1258,9 @@ function openTopKoinMenu(player) {
         scores.sort((a, b) => b.score - a.score);
 
         const form = new ActionFormData();
-        form.title("§6[ Peringkat Top Sultan ]");
+        form.title("§6[ Papan Peringkat Konglomerat ]");
 
-        let bodyText = "§eTop 10 Pemain Terkaya Server:\n\n";
+        let bodyText = "§eDaftar 10 Entitas Paling Makmur:\n\n";
 
         const maxDisplay = Math.min(10, scores.length);
         for (let i = 0; i < maxDisplay; i++) {
@@ -1394,14 +1394,14 @@ const SHOP_CATEGORIES = [
 
 function openBuyMenu(player) {
     const form = new ActionFormData();
-    form.title("§1[ Katalog Belanja Server ]");
-    form.body(`${getUiHeader(player)}\n§7Pilih kategori barang yang ingin Anda beli.`);
+    form.title("§1[ Katalog Perdagangan ]");
+    form.body(`${getUiHeader(player)}\n§7Pilih kategori komoditas yang tersedia di pasar.`);
 
     for (const cat of SHOP_CATEGORIES) {
         form.button(`§l${cat.name}`, cat.icon);
     }
-    form.button("§d§lBarang Langka [OP]\n§r§7Harga premium", "textures/items/nether_star");
-    form.button("§cKembali ke Menu Utama");
+    form.button("§d§lArtefak Kuno\n§r§7Koleksi benda langka (Premium)", "textures/items/nether_star");
+    form.button("§cKembali ke Menu Pusat");
 
     form.show(player).then(res => {
         if (res.canceled) return;
@@ -1409,7 +1409,7 @@ function openBuyMenu(player) {
             openCategoryItemsMenu(player, SHOP_CATEGORIES[res.selection].name, SHOP_CATEGORIES[res.selection].keywords, false, 0);
         } else if (res.selection === SHOP_CATEGORIES.length) {
             // OP Items Tab (Special Case)
-            openCategoryItemsMenu(player, "Barang Langka [OP]", [], true, 0);
+            openCategoryItemsMenu(player, "Artefak Kuno", [], true, 0);
         } else {
             system.runTimeout(() => { openMainMenu(player); }, 5);
         }

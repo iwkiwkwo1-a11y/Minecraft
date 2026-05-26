@@ -265,7 +265,7 @@ export function applyPassiveStats(player, rpgData) {
             player.addEffect("speed", 30, { amplifier: 0, showParticles: false }); // Speed 1
         }
 
-        // --- Gacha Passives ---
+        // --- Berkat Kuno (Gacha Passives) ---
         const passives = rpgData.equippedGachaPassives || [];
 
         if (passives.includes("fortitude")) {

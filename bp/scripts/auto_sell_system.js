@@ -24,9 +24,9 @@ function saveDb(data) {
 // UI Menu
 export function openAutoSellMenu(player) {
     const form = new ActionFormData();
-    form.title("§1[ Mesin Auto-Sell ]");
-    form.body(`Mesin ini akan otomatis menjual barang yang masuk ke dalamnya (misal dari Hopper) dan mengirimkan Rupiah ke dompet Anda, bahkan saat Anda Offline!\n\n§eHarga: ${formatRupiah(CHEST_PRICE)}`);
-    form.button("§aBeli Chest Auto-Sell\n§7Rp 1 Juta", "textures/blocks/chest_front");
+    form.title("§1[ Sistem Ekspor Otomatis ]");
+    form.body(`Peti ajaib ini akan mengekspor barang yang masuk ke dalamnya secara otomatis dan mencairkan dananya ke Kas Anda, meskipun Anda sedang tidak berada di server!\n\n§eBiaya Pembuatan: ${formatRupiah(CHEST_PRICE)}`);
+    form.button("§aBeli Peti Ekspor\n§7Rp 1 Juta", "textures/blocks/chest_front");
     form.button("§cKembali", "textures/ui/cancel");
 
     form.show(player).then(res => {
@@ -55,10 +55,10 @@ function buyAutoSellChest(player) {
     setScore(player, "dompet", currentCoins - CHEST_PRICE);
 
     const chestItem = new ItemStack("minecraft:chest", 1);
-    chestItem.nameTag = "§a§lChest Auto-Sell";
+    chestItem.nameTag = "§a§lPeti Ekspor (Auto-Sell)";
 
     inventory.addItem(chestItem);
-    player.sendMessage("§a[Shop] Berhasil membeli Chest Auto-Sell! Silakan taruh di lantai dan sambungkan dengan Hopper.");
+    player.sendMessage("§a[Sistem] Berhasil membuat Peti Ekspor! Silakan taruh di markas dan sambungkan dengan Corong (Hopper).");
 }
 
 // Detect placing the custom chest
@@ -74,7 +74,8 @@ world.afterEvents.playerPlaceBlock.subscribe((event) => {
 // Since playerPlaceBlock doesn't easily give the nameTag of the item used, we'll use itemUseOn to intercept.
 world.beforeEvents.itemUseOn.subscribe((event) => {
     const item = event.itemStack;
-    if (item && item.typeId === "minecraft:chest" && item.nameTag === "§a§lChest Auto-Sell") {
+    // Check both old and new name tags for backwards compatibility
+    if (item && item.typeId === "minecraft:chest" && (item.nameTag === "§a§lPeti Ekspor (Auto-Sell)" || item.nameTag === "§a§lChest Auto-Sell")) {
         const player = event.source;
         const block = event.block;
         const face = event.blockFace;
@@ -107,7 +108,7 @@ world.beforeEvents.itemUseOn.subscribe((event) => {
                 const eq = player.getComponent("equippable");
                 if (eq) {
                    const mainhand = eq.getEquipment("Mainhand");
-                   if (mainhand && mainhand.typeId === "minecraft:chest" && mainhand.nameTag === "§a§lChest Auto-Sell") {
+                   if (mainhand && mainhand.typeId === "minecraft:chest" && (mainhand.nameTag === "§a§lPeti Ekspor (Auto-Sell)" || mainhand.nameTag === "§a§lChest Auto-Sell")) {
                        if (mainhand.amount > 1) {
                            mainhand.amount--;
                            eq.setEquipment("Mainhand", mainhand);
@@ -135,7 +136,7 @@ world.beforeEvents.itemUseOn.subscribe((event) => {
             });
             saveDb(db);
 
-            player.sendMessage("§a[System] Mesin Auto-Sell dipasang! Area farm ini sekarang aktif 24 jam penuh tanpa perlu dijaga!");
+            player.sendMessage("§a[Sistem] Peti Ekspor terpasang! Area industri ini sekarang aktif beroperasi 24 jam penuh tanpa perlu diawasi!");
         });
     }
 });
@@ -179,10 +180,10 @@ world.beforeEvents.playerBreakBlock.subscribe((event) => {
 
                 // Drop custom item
                 const drop = new ItemStack("minecraft:chest", 1);
-                drop.nameTag = "§a§lChest Auto-Sell";
+                drop.nameTag = "§a§lPeti Ekspor (Auto-Sell)";
                 event.dimension.spawnItem(drop, block.center());
 
-                player.sendMessage("§c[System] Mesin Auto-Sell dihancurkan.");
+                player.sendMessage("§c[Sistem] Peti Ekspor berhasil dibongkar.");
             });
         }
     }
