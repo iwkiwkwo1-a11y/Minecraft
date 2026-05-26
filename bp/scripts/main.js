@@ -20,7 +20,25 @@ system.run(() => {
         }
 
         // Clear sidebar if it was previously set
-        world.scoreboard.clearObjectiveAtDisplaySlot(DisplaySlotId.Sidebar);} catch (e) {
+        world.scoreboard.clearObjectiveAtDisplaySlot(DisplaySlotId.Sidebar);
+
+        // Clean up legacy dummy players from old Auto-Sell bug
+        system.runTimeout(() => {
+            try {
+                const dompetObj = world.scoreboard.getObjective("dompet");
+                if (dompetObj) {
+                    const participants = dompetObj.getParticipants();
+                    for (const participant of participants) {
+                        // If it's a FakePlayer (string entity), remove it to clean the Top Sultan leaderboard
+                        if (participant.type !== "Player") {
+                            dompetObj.removeParticipant(participant);
+                        }
+                    }
+                }
+            } catch(e) {}
+        }, 100);
+
+    } catch (e) {
         // Ignore if it already exists or errors
     }
 });
