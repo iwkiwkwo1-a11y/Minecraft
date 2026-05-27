@@ -3,7 +3,7 @@ import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 import { EconomyConfig } from "./economy_config.js";
 import { getPlayerRpgData, getXpRequired, generateXpBar, applyPassiveStats, addXp, breakBlockArea, canUseActiveSkill, savePlayerRpgData } from "./rpg_system.js";
 import { formatRupiah, getUiHeader, sendToInbox, getInbox, clearInbox, getScore, setScore } from "./utils.js";
-import { openGachaMenu, PASSIVE_POOL } from "./gacha_system.js";
+import { openGachaMenu } from "./gacha_system.js";
 import { openTrollMenu } from "./troll_system.js";
 import { getPlayerRank } from "./rank_system.js";
 import { openAutoSellMenu } from "./auto_sell_system.js";
@@ -616,63 +616,70 @@ function openEquipUnifiedMenu(player) {
     const form = new ModalFormData();
     form.title("§a[ Manajemen Kemampuan ]");
 
-    // 1. Add toggles for Active Skills
-    for (const skillId of unlockedActives) {
-        const skillInfo = AVAILABLE_SKILLS.find(s => s.id === skillId);
-        const isEquipped = rpgData.equippedSkills.includes(skillId);
-        form.toggle(`§b(Teknik) §r${skillInfo ? skillInfo.name : skillId}`, isEquipped);
-    }
+    // Dynamically fetch PASSIVE_POOL to prevent dependency conflicts, then build form
+    import("./gacha_system.js").then(mod => {
+        const PASSIVE_POOL = mod.PASSIVE_POOL || [];
 
-    // 2. Add toggles for Gacha Passives
-    for (const passiveId of unlockedPassives) {
-        const passiveInfo = PASSIVE_POOL.find(p => p.id === passiveId);
-        const isEquipped = (rpgData.equippedGachaPassives || []).includes(passiveId);
-        form.toggle(`§d(Berkat) §r${passiveInfo ? passiveInfo.name : passiveId}`, isEquipped);
-    }
+        // 1. Add toggles for Active Skills
+        for (const skillId of unlockedActives) {
+            const skillInfo = AVAILABLE_SKILLS.find(s => s.id === skillId);
+            const isEquipped = rpgData.equippedSkills.includes(skillId);
+            const label = skillInfo ? `§b(Teknik) §r${skillInfo.name}\n§7${skillInfo.desc}` : `§b(Teknik) §r${skillId}`;
+            form.toggle(label, isEquipped);
+        }
 
-    form.show(player).then((res) => {
-        if (res.canceled) return;
+        // 2. Add toggles for Gacha Passives
+        for (const passiveId of unlockedPassives) {
+            const passiveInfo = PASSIVE_POOL.find(p => p.id === passiveId);
+            const isEquipped = (rpgData.equippedGachaPassives || []).includes(passiveId);
+            const label = passiveInfo ? `§d(Berkat) §r${passiveInfo.name}\n§7Efek: ${passiveInfo.desc}` : `§d(Berkat) §r${passiveId}`;
+            form.toggle(label, isEquipped);
+        }
 
-        let newActiveEquipped = [];
-        let newPassiveEquipped = [];
+        form.show(player).then((res) => {
+            if (res.canceled) return;
 
-        let currentIndex = 0;
+            let newActiveEquipped = [];
+            let newPassiveEquipped = [];
 
-        // Parse Active Skills responses
-        for (let i = 0; i < unlockedActives.length; i++) {
-            if (res.formValues[currentIndex] === true) {
-                newActiveEquipped.push(unlockedActives[i]);
+            let currentIndex = 0;
+
+            // Parse Active Skills responses
+            for (let i = 0; i < unlockedActives.length; i++) {
+                if (res.formValues[currentIndex] === true) {
+                    newActiveEquipped.push(unlockedActives[i]);
+                }
+                currentIndex++;
             }
-            currentIndex++;
-        }
 
-        // Parse Passive Skills responses
-        for (let i = 0; i < unlockedPassives.length; i++) {
-            if (res.formValues[currentIndex] === true) {
-                newPassiveEquipped.push(unlockedPassives[i]);
+            // Parse Passive Skills responses
+            for (let i = 0; i < unlockedPassives.length; i++) {
+                if (res.formValues[currentIndex] === true) {
+                    newPassiveEquipped.push(unlockedPassives[i]);
+                }
+                currentIndex++;
             }
-            currentIndex++;
-        }
 
-        let hasError = false;
+            let hasError = false;
 
-        if (newActiveEquipped.length > 2) {
-            player.sendMessage("§c[Sistem] Kapasitas berlebih! Anda hanya dapat menggunakan maksimal 2 Teknik secara bersamaan.");
-            hasError = true;
-        }
+            if (newActiveEquipped.length > 2) {
+                player.sendMessage("§c[Sistem] Kapasitas berlebih! Anda hanya dapat menggunakan maksimal 2 Teknik secara bersamaan.");
+                hasError = true;
+            }
 
-        if (newPassiveEquipped.length > 3) {
-            player.sendMessage("§c[Sistem] Kapasitas berlebih! Anda hanya dapat menyerap maksimal 3 Berkat Kuno.");
-            hasError = true;
-        }
+            if (newPassiveEquipped.length > 3) {
+                player.sendMessage("§c[Sistem] Kapasitas berlebih! Anda hanya dapat menyerap maksimal 3 Berkat Kuno.");
+                hasError = true;
+            }
 
-        if (!hasError) {
-            rpgData.equippedSkills = newActiveEquipped;
-            rpgData.equippedGachaPassives = newPassiveEquipped;
-            savePlayerRpgData(player, rpgData);
-            player.sendMessage("§a[Sistem] Susunan kemampuan & berkat berhasil diterapkan.");
-        }
-    });
+            if (!hasError) {
+                rpgData.equippedSkills = newActiveEquipped;
+                rpgData.equippedGachaPassives = newPassiveEquipped;
+                savePlayerRpgData(player, rpgData);
+                player.sendMessage("§a[Sistem] Susunan kemampuan & berkat berhasil diterapkan.");
+            }
+        });
+    }).catch(()=>{});
 }
 
 

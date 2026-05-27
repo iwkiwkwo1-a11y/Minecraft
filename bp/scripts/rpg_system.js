@@ -1,4 +1,4 @@
-import { world, system, ItemStack } from "@minecraft/server";
+import { world, system, ItemStack, BlockPermutation } from "@minecraft/server";
 
 export const MAX_LEVEL = 50;
 
@@ -120,6 +120,8 @@ export function breakBlockArea(player, originBlock, radius, mainHandItem) {
     // Hardcoded safety limits to prevent crashing the server
     if (radius > 2) radius = 2;
 
+    const airPermutation = BlockPermutation.resolve("minecraft:air");
+
     for (let x = -radius; x <= radius; x++) {
         for (let y = -radius; y <= radius; y++) {
             for (let z = -radius; z <= radius; z++) {
@@ -140,44 +142,42 @@ export function breakBlockArea(player, originBlock, radius, mainHandItem) {
 
                         if (isNatural && !isArtificial && id !== "minecraft:bedrock" && id !== "minecraft:barrier" && id !== "minecraft:deny" && id !== "minecraft:allow" && id !== "minecraft:border_block") {
 
+                            // Fast Native Block Deletion (Massively reduces command queue lag)
+                            // To simulate "destroy", we manually drop the core item
+                            let dropItem = "";
+                            let dropCount = 1;
+
+                            // Resolve drop identity
+                            if (id === "minecraft:stone") dropItem = "minecraft:cobblestone";
+                            else if (id === "minecraft:deepslate") dropItem = "minecraft:cobbled_deepslate";
+                            else if (id.includes("diamond_ore")) dropItem = "minecraft:diamond";
+                            else if (id.includes("emerald_ore")) dropItem = "minecraft:emerald";
+                            else if (id.includes("coal_ore")) dropItem = "minecraft:coal";
+                            else if (id.includes("iron_ore")) dropItem = "minecraft:raw_iron";
+                            else if (id.includes("gold_ore")) dropItem = "minecraft:raw_gold";
+                            else if (id.includes("copper_ore")) dropItem = "minecraft:raw_copper";
+                            else if (id.includes("lapis_ore")) dropItem = "minecraft:lapis_lazuli";
+                            else if (id.includes("redstone_ore")) dropItem = "minecraft:redstone";
+                            else if (id.includes("nether_quartz_ore")) dropItem = "minecraft:quartz";
+                            else if (id.includes("amethyst_cluster")) dropItem = "minecraft:amethyst_shard";
+                            else dropItem = id; // Default fallback to block itself (like dirt, diorite)
+
                             // Custom Fortune Logic for Ores
                             if (fortuneLevel > 0 && id.includes("ore")) {
-                                // Calculate extra drops (Vanilla Fortune roughly: level 1 = 33% chance for x2, level 2 = 25% chance each for x2,x3)
-                                // Simplified implementation for performance
-                                let extraMultiplier = 1;
                                 const roll = Math.random();
-                                if (fortuneLevel === 1 && roll < 0.33) extraMultiplier = 2;
-                                else if (fortuneLevel === 2) extraMultiplier = roll < 0.25 ? 3 : (roll < 0.5 ? 2 : 1);
-                                else if (fortuneLevel >= 3) extraMultiplier = roll < 0.2 ? 4 : (roll < 0.4 ? 3 : (roll < 0.6 ? 2 : 1));
-
-                                if (extraMultiplier > 1) {
-                                    // Spawn extra drops directly. We map ore to its raw drop.
-                                    let dropItem = "";
-                                    if (id.includes("diamond")) dropItem = "minecraft:diamond";
-                                    else if (id.includes("emerald")) dropItem = "minecraft:emerald";
-                                    else if (id.includes("coal")) dropItem = "minecraft:coal";
-                                    else if (id.includes("iron")) dropItem = "minecraft:raw_iron";
-                                    else if (id.includes("gold")) dropItem = "minecraft:raw_gold";
-                                    else if (id.includes("copper")) dropItem = "minecraft:raw_copper";
-                                    else if (id.includes("lapis")) dropItem = "minecraft:lapis_lazuli";
-                                    else if (id.includes("redstone")) dropItem = "minecraft:redstone";
-                                    else if (id.includes("quartz")) dropItem = "minecraft:quartz";
-                                    else if (id.includes("amethyst")) dropItem = "minecraft:amethyst_shard";
-
-                                    if (dropItem !== "") {
-                                        // We spawn (extraMultiplier - 1) because the block destruction itself will drop 1
-                                        const extraCount = extraMultiplier - 1;
-                                        try {
-                                            const itemStack = new ItemStack(dropItem, extraCount);
-                                            dimension.spawnItem(itemStack, {x: bx + 0.5, y: by + 0.5, z: bz + 0.5});
-                                        } catch(e) {}
-                                    }
-                                }
+                                if (fortuneLevel === 1 && roll < 0.33) dropCount = 2;
+                                else if (fortuneLevel === 2) dropCount = roll < 0.25 ? 3 : (roll < 0.5 ? 2 : 1);
+                                else if (fortuneLevel >= 3) dropCount = roll < 0.2 ? 4 : (roll < 0.4 ? 3 : (roll < 0.6 ? 2 : 1));
                             }
 
-                            // destroy keyword causes block to drop its base item
-                            dimension.runCommandAsync(`setblock ${bx} ${by} ${bz} air destroy`);
-                            brokenCount++;
+                            // Execute fast drops and wipe
+                            try {
+                                if (dropItem !== "") {
+                                    dimension.spawnItem(new ItemStack(dropItem, dropCount), {x: bx + 0.5, y: by + 0.5, z: bz + 0.5});
+                                }
+                                targetBlock.setPermutation(airPermutation);
+                                brokenCount++;
+                            } catch (e) {}
                         }
                     }
                 } catch(e) {}
